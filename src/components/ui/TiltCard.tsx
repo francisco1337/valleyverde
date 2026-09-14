@@ -32,8 +32,18 @@ export function TiltCard({ children, className, max = 7 }: TiltCardProps) {
 
         gsap.set(card, { transformPerspective: 900, transformOrigin: "center" });
 
+        // Measured on arrival, not per move — see the note in Magnetic. This
+        // one was the worse of the two: the handler also wrote the two sheen
+        // custom properties, so every frame was a write followed by a read,
+        // which is the textbook layout thrash.
+        let rect: DOMRect | null = null;
+
+        const onEnter = () => {
+          rect = card.getBoundingClientRect();
+        };
+
         const onMove = (event: PointerEvent) => {
-          const rect = card.getBoundingClientRect();
+          if (!rect) rect = card.getBoundingClientRect();
           const px = (event.clientX - rect.left) / rect.width - 0.5;
           const py = (event.clientY - rect.top) / rect.height - 0.5;
           rotY(px * max * 2);
@@ -43,16 +53,27 @@ export function TiltCard({ children, className, max = 7 }: TiltCardProps) {
         };
 
         const onLeave = () => {
+          rect = null;
           rotX(0);
           rotY(0);
         };
 
+        const invalidate = () => {
+          if (rect) rect = null;
+        };
+
+        card.addEventListener("pointerenter", onEnter);
         card.addEventListener("pointermove", onMove);
         card.addEventListener("pointerleave", onLeave);
+        window.addEventListener("scroll", invalidate, { passive: true });
+        window.addEventListener("resize", invalidate);
 
         return () => {
+          card.removeEventListener("pointerenter", onEnter);
           card.removeEventListener("pointermove", onMove);
           card.removeEventListener("pointerleave", onLeave);
+          window.removeEventListener("scroll", invalidate);
+          window.removeEventListener("resize", invalidate);
         };
       });
     },

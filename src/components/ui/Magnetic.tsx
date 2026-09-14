@@ -32,8 +32,24 @@ export function Magnetic({ children, strength = 14, className }: MagneticProps) 
         const xTo = gsap.quickTo(el, "x", { duration: 0.5, ease: "power3.out" });
         const yTo = gsap.quickTo(el, "y", { duration: 0.5, ease: "power3.out" });
 
+        /**
+         * The box is measured once when the pointer arrives, not on every move.
+         *
+         * Measuring per move was a forced reflow every single frame: the tween
+         * writes a transform, the next move reads geometry, and the browser has
+         * to flush layout in between. Caching also removes a feedback loop —
+         * `getBoundingClientRect()` includes the transform, so as the element
+         * drifted toward the cursor its own centre moved with it and the pull
+         * damped itself. The untransformed box is the honest reference.
+         */
+        let rect: DOMRect | null = null;
+
+        const onEnter = () => {
+          rect = el.getBoundingClientRect();
+        };
+
         const onMove = (event: PointerEvent) => {
-          const rect = el.getBoundingClientRect();
+          if (!rect) rect = el.getBoundingClientRect();
           const relX = event.clientX - (rect.left + rect.width / 2);
           const relY = event.clientY - (rect.top + rect.height / 2);
           xTo((relX / rect.width) * strength * 2);
@@ -41,16 +57,30 @@ export function Magnetic({ children, strength = 14, className }: MagneticProps) 
         };
 
         const onLeave = () => {
+          rect = null;
           xTo(0);
           yTo(0);
         };
 
+        // The cached box is in viewport coordinates, so scrolling or resizing
+        // while hovering invalidates it. Both are passive and just drop the
+        // cache; the next move re-measures once.
+        const invalidate = () => {
+          if (rect) rect = null;
+        };
+
+        el.addEventListener("pointerenter", onEnter);
         el.addEventListener("pointermove", onMove);
         el.addEventListener("pointerleave", onLeave);
+        window.addEventListener("scroll", invalidate, { passive: true });
+        window.addEventListener("resize", invalidate);
 
         return () => {
+          el.removeEventListener("pointerenter", onEnter);
           el.removeEventListener("pointermove", onMove);
           el.removeEventListener("pointerleave", onLeave);
+          window.removeEventListener("scroll", invalidate);
+          window.removeEventListener("resize", invalidate);
         };
       });
     },

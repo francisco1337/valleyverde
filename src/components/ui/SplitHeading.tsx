@@ -55,9 +55,18 @@ export function SplitHeading({
           split = null;
         };
 
+        // Width at the last split. A re-split is only worth its cost when the
+        // line breaks can actually have moved, i.e. when the box got wider or
+        // narrower — `refreshInit` also fires for reasons that have nothing to
+        // do with this element (any pinned section recalculating, for one), and
+        // re-splitting on those was measuring every line of every pending
+        // heading for nothing.
+        let lastWidth = -1;
+
         const build = () => {
           if (done) return;
           teardown();
+          lastWidth = el.offsetWidth;
 
           split = new SplitText(el, {
             type: by === "words" ? "words" : "lines",
@@ -97,7 +106,9 @@ export function SplitHeading({
         build();
 
         const onRefresh = () => {
-          if (!done && by === "lines") build();
+          if (done || by !== "lines") return;
+          if (el.offsetWidth === lastWidth) return;
+          build();
         };
         ScrollTrigger.addEventListener("refreshInit", onRefresh);
 
