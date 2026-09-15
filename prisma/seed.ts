@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { AsegurarUsuario } from "../src/contextos/identidad/aplicacion/AsegurarUsuario";
 import type { Rol } from "../src/contextos/identidad/dominio/Rol";
-import { clientePrisma } from "../src/contextos/identidad/infraestructura/persistencia/ClientePrisma";
+import { clientePrisma } from "../src/contextos/compartido/infraestructura/persistencia/ClientePrisma";
 import { PrismaRepositorioDeUsuarios } from "../src/contextos/identidad/infraestructura/persistencia/PrismaRepositorioDeUsuarios";
 import { BcryptCifradorDeContrasenas } from "../src/contextos/identidad/infraestructura/seguridad/BcryptCifradorDeContrasenas";
 

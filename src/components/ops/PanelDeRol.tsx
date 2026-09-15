@@ -1,4 +1,5 @@
-import { LayoutGrid } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, LayoutGrid } from "lucide-react";
 
 import type { UsuarioAutenticado } from "@/contextos/identidad/aplicacion/UsuarioAutenticado";
 import { paneles } from "@/lib/paneles";
@@ -6,10 +7,12 @@ import { paneles } from "@/lib/paneles";
 /**
  * El panel de cualquier rol.
  *
- * Por ahora cada sección es una tarjeta vacía que dice a qué rol pertenece:
- * es el esqueleto sobre el que se van a colgar los módulos de verdad. Los tres
- * roles comparten este componente porque hoy se diferencian sólo en la lista de
- * secciones; en cuanto uno necesite algo propio, se separa.
+ * Cada sección es una tarjeta. Las que ya tienen módulo construido llevan
+ * `ruta` y se vuelven enlaces; las demás siguen siendo esqueleto, para que se
+ * vea a dónde va esto sin prometer una pantalla que todavía no existe.
+ *
+ * Los tres roles comparten este componente porque hoy se diferencian sólo en la
+ * lista de secciones; en cuanto uno necesite algo propio, se separa.
  */
 export function PanelDeRol({ usuario }: { usuario: UsuarioAutenticado }) {
   const panel = paneles[usuario.rol];
@@ -29,28 +32,63 @@ export function PanelDeRol({ usuario }: { usuario: UsuarioAutenticado }) {
       </header>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {panel.secciones.map((seccion) => (
-          <section
-            key={seccion.titulo}
-            className="rounded-2xl border border-sand-200 bg-white p-5 shadow-sm"
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-forest-50 text-forest-700">
-              <LayoutGrid className="h-4.5 w-4.5" aria-hidden />
-            </span>
+        {panel.secciones.map((seccion) => {
+          const listo = Boolean(seccion.ruta);
 
-            <h2 className="mt-4 text-sm font-semibold text-forest-950">
-              {seccion.titulo}
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-forest-950/55">
-              {seccion.resumen}
-            </p>
+          const contenido = (
+            <>
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                  listo ? "bg-forest-700 text-sand-50" : "bg-forest-50 text-forest-700"
+                }`}
+              >
+                <LayoutGrid className="h-4.5 w-4.5" aria-hidden />
+              </span>
 
-            <p className="mt-4 inline-flex rounded-md bg-sand-100 px-2 py-1 text-[11px] font-bold tracking-[0.12em] text-forest-800 uppercase">
-              {panel.etiqueta}
-            </p>
-          </section>
-        ))}
+              <h2 className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-forest-950">
+                {seccion.titulo}
+                {listo ? (
+                  <ArrowRight
+                    className="h-3.5 w-3.5 text-forest-600 transition group-hover:translate-x-0.5"
+                    aria-hidden
+                  />
+                ) : null}
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-forest-950/55">
+                {seccion.resumen}
+              </p>
+
+              <p
+                className={`mt-4 inline-flex rounded-md px-2 py-1 text-[11px] font-bold tracking-[0.12em] uppercase ${
+                  listo
+                    ? "bg-sprout-400/20 text-forest-800"
+                    : "bg-sand-100 text-forest-950/45"
+                }`}
+              >
+                {listo ? "Disponible" : "Pendiente"}
+              </p>
+            </>
+          );
+
+          return seccion.ruta ? (
+            <Link
+              key={seccion.titulo}
+              href={seccion.ruta}
+              className="group rounded-2xl border border-sand-200 bg-white p-5 shadow-sm transition hover:border-sprout-400/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-forest-400 focus-visible:outline-none"
+            >
+              {contenido}
+            </Link>
+          ) : (
+            <section
+              key={seccion.titulo}
+              className="rounded-2xl border border-sand-200 bg-white/60 p-5"
+            >
+              {contenido}
+            </section>
+          );
+        })}
       </div>
+
     </div>
   );
 }

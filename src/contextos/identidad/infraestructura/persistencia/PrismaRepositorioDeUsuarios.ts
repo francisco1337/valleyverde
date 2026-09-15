@@ -5,7 +5,7 @@ import type { NombreUsuario } from "@/contextos/identidad/dominio/NombreUsuario"
 import type { RepositorioDeUsuarios } from "@/contextos/identidad/dominio/puertos/RepositorioDeUsuarios";
 import { esRol, type Rol } from "@/contextos/identidad/dominio/Rol";
 import { Usuario } from "@/contextos/identidad/dominio/Usuario";
-import { clientePrisma } from "@/contextos/identidad/infraestructura/persistencia/ClientePrisma";
+import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 /** La forma en que MySQL guarda un usuario. No sale de este archivo. */

@@ -1,7 +1,8 @@
 // Esquema de Valley Verde Operations.
 //
-// Por ahora sólo vive aquí lo que el login necesita: usuarios y su rol. Todo
-// lo demás (clientes, propiedades, rutas, facturas) se agrega encima de esto.
+// Se construye por módulos. Hoy están identidad (usuarios y su rol) y la
+// cartera (clientes). Lo que sigue — ubicaciones, servicios, asignaciones,
+// eventos y evidencias — está diseñado en valleyverde.dbml, en la raíz.
 
 generator client {
   provider = "prisma-client"
@@ -45,4 +46,34 @@ model Usuario {
   actualizadoEn DateTime @updatedAt
 
   @@map("usuarios")
+}
+
+/// Una empresa a la que Valley Verde le presta servicio: la administradora del
+/// centro comercial, la mesa directiva del fraccionamiento, el dueño del
+/// edificio. De aquí van a colgar las ubicaciones.
+model Cliente {
+  // Igual que Usuario: la identidad la genera el dominio, no la base.
+  id String @id
+
+  /// Razón social o nombre comercial. Es como lo busca la oficina.
+  nombre String
+
+  /// La persona con la que se trata. Opcional: a veces se da de alta la
+  /// empresa antes de saber quién va a contestar el teléfono.
+  contacto String?
+
+  telefono String?
+  correo   String?
+  notas    String? @db.Text
+
+  /// Un cliente con historial no se borra, se desactiva.
+  activo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  // La lista de la oficina es "los activos, por nombre". Este índice la cubre
+  // entera: filtra y ordena sin pasar por un filesort.
+  @@index([activo, nombre])
+  @@map("clientes")
 }

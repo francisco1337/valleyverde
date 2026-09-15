@@ -11,6 +11,11 @@ import type { Rol } from "@/contextos/identidad/dominio/Rol";
 export type Seccion = {
   titulo: string;
   resumen: string;
+  /**
+   * A dónde lleva la tarjeta. Mientras no exista, la sección se pinta como
+   * esqueleto: se ve lo que va a haber, pero no se puede entrar.
+   */
+  ruta?: string;
 };
 
 export type Panel = {
@@ -43,7 +48,11 @@ export const paneles: Record<Rol, Panel> = {
     descripcion: "Clientes, cotizaciones, agenda y cobranza.",
     ruta: "/app/oficina",
     secciones: [
-      { titulo: "Clientes", resumen: "Contactos y propiedades a su nombre." },
+      {
+        titulo: "Clientes",
+        resumen: "Contactos y propiedades a su nombre.",
+        ruta: "/app/oficina/clientes",
+      },
       { titulo: "Cotizaciones", resumen: "Arma, manda y da seguimiento." },
       { titulo: "Agenda", resumen: "Lo programado de la semana." },
       { titulo: "Cobranza", resumen: "Quién pagó y quién debe." },
