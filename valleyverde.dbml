@@ -1,0 +1,239 @@
+// ============================================================
+//  Valley Verde Operations — MVP
+//  Pegar en https://dbdiagram.io
+//
+//  Alcance: exactamente los procesos de los tres roles.
+//  Convenciones tomadas del código que ya existe:
+//    - id: UUID en varchar(191) generado en el dominio, no por MySQL
+//    - tablas en plural y snake_case, columnas en camelCase
+//    - utf8mb4_unicode_ci
+// ============================================================
+
+Project valley_verde {
+  database_type: 'MySQL'
+  Note: '''
+    Tres roles: ADMINISTRADOR (catálogo y finanzas), OFICINA (cartera y
+    programación), TECNICO (ejecución en campo).
+
+    Regla que gobierna todo el diseño: la ASIGNACIÓN es el acuerdo vivo
+    y el EVENTO es el comprobante histórico. El evento copia precio,
+    servicio, ubicación y técnico al momento de generarse, así que
+    cambiar la asignación mañana nunca reescribe lo que ya pasó.
+  '''
+}
+
+// ------------------------------------------------------------
+//  Enums
+// ------------------------------------------------------------
+
+Enum rol {
+  ADMINISTRADOR
+  OFICINA
+  TECNICO
+}
+
+Enum periodicidad {
+  DIARIO
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
+Enum estado_evento {
+  PROGRAMADO
+  COMPLETADO
+  CANCELADO
+}
+
+// ------------------------------------------------------------
+//  Identidad — ya existe en la migración inicial
+// ------------------------------------------------------------
+
+Table usuarios {
+  id            varchar(191)  [pk, note: 'UUID generado en el dominio']
+  usuario       varchar(191)  [not null, unique, note: 'Se guarda en MAYÚSCULAS']
+  nombre        varchar(191)  [not null]
+  passwordHash  varchar(191)  [not null, note: 'bcrypt']
+  rol           rol           [not null]
+  activo        boolean       [not null, default: true]
+  creadoEn      datetime(3)   [not null]
+  actualizadoEn datetime(3)   [not null]
+
+  Indexes {
+    (rol, activo) [name: 'usuarios_rol_activo_idx']
+  }
+
+  Note: 'El índice (rol, activo) resuelve «oficina ve todos los técnicos».'
+}
+
+// ------------------------------------------------------------
+//  Catálogo — lo da de alta el ADMINISTRADOR
+// ------------------------------------------------------------
+
+Table servicios {
+  id             varchar(191)  [pk]
+  nombre         varchar(191)  [not null, unique, note: 'Poda, Riego, Limpieza…']
+  descripcion    text          [null]
+  precioSugerido decimal(10,2) [null, note: 'Referencia. El precio que manda es el de la asignación']
+  activo         boolean       [not null, default: true]
+  creadoEn       datetime(3)   [not null]
+  actualizadoEn  datetime(3)   [not null]
+
+  Note: '''
+    Catálogo de TIPOS de servicio, no de servicios vendidos.
+    Nunca se borra un servicio con historial: se pone activo = false.
+  '''
+}
+
+// ------------------------------------------------------------
+//  Cartera — la da de alta la OFICINA
+// ------------------------------------------------------------
+
+Table clientes {
+  id            varchar(191)  [pk]
+  nombre        varchar(191)  [not null, note: 'Razón social o nombre comercial']
+  contacto      varchar(191)  [null, note: 'Persona con la que se trata']
+  telefono      varchar(40)   [null]
+  correo        varchar(191)  [null]
+  notas         text          [null]
+  activo        boolean       [not null, default: true]
+  creadoEn      datetime(3)   [not null]
+  actualizadoEn datetime(3)   [not null]
+
+  Indexes {
+    (activo, nombre) [name: 'clientes_activo_nombre_idx']
+  }
+}
+
+Table ubicaciones {
+  id            varchar(191)  [pk]
+  clienteId     varchar(191)  [not null]
+  nombre        varchar(191)  [not null, note: 'Ej. «Plaza Norte — estacionamiento»']
+  direccion     varchar(500)  [not null]
+  latitud       decimal(9,6)  [null]
+  longitud      decimal(9,6)  [null]
+  notasDeAcceso text          [null, note: 'Código del portón, a quién buscar, horario permitido']
+  activo        boolean       [not null, default: true]
+  creadoEn      datetime(3)   [not null]
+  actualizadoEn datetime(3)   [not null]
+
+  Indexes {
+    (clienteId, activo) [name: 'ubicaciones_cliente_activo_idx']
+  }
+
+  Note: '''
+    N ubicaciones por cliente.
+    latitud/longitud son opcionales: con dirección basta para el enlace
+    a Google Maps, y las coordenadas se llenan después si hacen falta.
+  '''
+}
+
+// ------------------------------------------------------------
+//  Programación — la arma la OFICINA
+// ------------------------------------------------------------
+
+Table asignaciones {
+  id              varchar(191)  [pk]
+  ubicacionId     varchar(191)  [not null]
+  servicioId      varchar(191)  [not null]
+  tecnicoId       varchar(191)  [not null, note: 'usuarios.rol debe ser TECNICO — lo valida el dominio']
+  periodicidad    periodicidad  [not null]
+  precioPorEvento decimal(10,2) [not null, note: 'decimal, nunca float: con float 0.1+0.2 no da 0.3']
+  fechaInicio     date          [not null]
+  fechaFin        date          [not null, note: 'OBLIGATORIA: sin ella la serie es infinita']
+  activo          boolean       [not null, default: true]
+  creadoEn        datetime(3)   [not null]
+  actualizadoEn   datetime(3)   [not null]
+
+  Indexes {
+    (ubicacionId, activo) [name: 'asignaciones_ubicacion_activo_idx']
+    (tecnicoId, activo)   [name: 'asignaciones_tecnico_activo_idx']
+  }
+
+  Note: '''
+    N asignaciones por ubicación: el acuerdo recurrente.
+    Al guardarla se generan de golpe todos los eventos entre
+    fechaInicio y fechaFin según la periodicidad.
+
+    Cambiar la periodicidad o las fechas de una asignación viva obliga
+    a regenerar los eventos PROGRAMADOS. Los COMPLETADOS jamás se tocan.
+  '''
+}
+
+// ------------------------------------------------------------
+//  Ejecución — la cierra el TECNICO
+// ------------------------------------------------------------
+
+Table eventos {
+  id            varchar(191)  [pk]
+  asignacionId  varchar(191)  [not null]
+
+  // --- copiados de la asignación al generar el evento ---
+  servicioId    varchar(191)  [not null, note: 'COPIA: para que las finanzas por servicio no cambien con el tiempo']
+  ubicacionId   varchar(191)  [not null, note: 'COPIA: ahorra un join en la vista del técnico']
+  tecnicoId     varchar(191)  [not null, note: 'COPIA: permite cubrir una parada con otro técnico sin tocar la asignación']
+  precio        decimal(10,2) [not null, note: 'COPIA: congela el precio del día. Es la columna más importante del esquema']
+
+  fechaProgramada date        [not null, note: 'DATE puro. Phoenix es MST y no cambia a horario de verano']
+  estado        estado_evento [not null, default: 'PROGRAMADO']
+  completadoEn  datetime(3)   [null]
+  completadoPor varchar(191)  [null, note: 'Quién apretó el botón. Casi siempre tecnicoId, pero no siempre']
+  notas         text          [null]
+  creadoEn      datetime(3)   [not null]
+  actualizadoEn datetime(3)   [not null]
+
+  Indexes {
+    (asignacionId, fechaProgramada) [unique, name: 'eventos_asignacion_fecha_uq']
+    (tecnicoId, fechaProgramada)    [name: 'eventos_tecnico_fecha_idx']
+    (estado, fechaProgramada)       [name: 'eventos_estado_fecha_idx']
+    (servicioId, estado)            [name: 'eventos_servicio_estado_idx']
+    (ubicacionId, fechaProgramada)  [name: 'eventos_ubicacion_fecha_idx']
+  }
+
+  Note: '''
+    Una fila por visita programada. Es la tabla que crece.
+
+    El índice único (asignacionId, fechaProgramada) hace que generar
+    los eventos dos veces no duplique nada: la segunda corrida choca
+    y no inserta. Sale gratis y evita el bug más molesto del módulo.
+
+    Las finanzas son SUM(precio) de los eventos COMPLETADOS.
+    No hay tabla de facturas ni de pagos en este MVP.
+  '''
+}
+
+Table evidencias {
+  id             varchar(191) [pk]
+  eventoId       varchar(191) [not null]
+  ruta           varchar(500) [not null, note: 'Ruta relativa en disco. Con MariaDB propia no hay que ir a un bucket']
+  nombreOriginal varchar(191) [null]
+  tipoMime       varchar(100) [not null]
+  bytes          int          [not null]
+  subidoPor      varchar(191) [not null]
+  subidoEn       datetime(3)  [not null]
+
+  Indexes {
+    (eventoId) [name: 'evidencias_evento_idx']
+  }
+
+  Note: 'N fotos por evento. El archivo vive en disco, aquí sólo la referencia.'
+}
+
+// ------------------------------------------------------------
+//  Relaciones
+// ------------------------------------------------------------
+
+Ref: ubicaciones.clienteId     > clientes.id     [delete: restrict]
+
+Ref: asignaciones.ubicacionId  > ubicaciones.id  [delete: restrict]
+Ref: asignaciones.servicioId   > servicios.id    [delete: restrict]
+Ref: asignaciones.tecnicoId    > usuarios.id     [delete: restrict]
+
+Ref: eventos.asignacionId      > asignaciones.id [delete: cascade]
+Ref: eventos.servicioId        > servicios.id    [delete: restrict]
+Ref: eventos.ubicacionId       > ubicaciones.id  [delete: restrict]
+Ref: eventos.tecnicoId         > usuarios.id     [delete: restrict]
+Ref: eventos.completadoPor     > usuarios.id     [delete: restrict]
+
+Ref: evidencias.eventoId       > eventos.id      [delete: cascade]
+Ref: evidencias.subidoPor      > usuarios.id     [delete: restrict]
