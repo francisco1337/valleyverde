@@ -1,0 +1,48 @@
+// Esquema de Valley Verde Operations.
+//
+// Por ahora sólo vive aquí lo que el login necesita: usuarios y su rol. Todo
+// lo demás (clientes, propiedades, rutas, facturas) se agrega encima de esto.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  // La cadena de conexión no va aquí: Prisma 7 la lee de prisma7.config.ts.
+  provider = "mysql"
+}
+
+/// Los tres roles del sistema. El login es uno solo; el rol decide a qué
+/// panel aterriza cada persona y qué puede abrir.
+enum Rol {
+  ADMINISTRADOR
+  OFICINA
+  TECNICO
+}
+
+model Usuario {
+  // La identidad la genera el dominio (RepositorioDeUsuarios.siguienteId),
+  // no la base: así un Usuario ya es un Usuario antes de tocar MySQL.
+  id String @id
+
+  /// Con lo que la persona inicia sesión. Se guarda y se compara en
+  /// MAYÚSCULAS para que "tecnico" y "TECNICO" sean la misma cuenta.
+  usuario String @unique
+
+  /// Nombre para mostrar en la interfaz.
+  nombre String
+
+  /// Hash bcrypt. Aquí nunca se guarda una contraseña en texto plano.
+  passwordHash String
+
+  rol Rol
+
+  /// Dar de baja a alguien sin borrar su historial.
+  activo Boolean @default(true)
+
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  @@map("usuarios")
+}

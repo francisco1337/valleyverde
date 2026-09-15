@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# la plantilla sí se versiona, los .env reales no
+!.env.example
+
+# cliente de Prisma generado (se regenera con `npm run db:generate`)
+/src/generated

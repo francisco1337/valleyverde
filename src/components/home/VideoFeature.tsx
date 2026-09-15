@@ -16,7 +16,7 @@ import { company } from "@/lib/site";
  * the "facade" pattern. What ships in the HTML is a poster image (62 KB WebP,
  * which Next does optimise) and a play button. The `<video>` element is not
  * even in the DOM until the first click, at which point it mounts with
- * `autoPlay` and pulls the 12 MB.
+ * `autoPlay` and pulls ~8 MB.
  *
  * That is why this is not simply `<video preload="none">`: even with preload
  * off, the element itself, its poster handling and the extra layout work all
@@ -58,14 +58,29 @@ export function VideoFeature() {
           <div className="relative aspect-video overflow-hidden rounded-3xl bg-forest-900 shadow-2xl">
             {started ? (
               <video
-                src="/video/why-valley-verde.mp4"
                 poster="/images/video-poster.webp"
                 controls
                 autoPlay
                 playsInline
                 preload="auto"
                 className="size-full object-cover"
-              />
+              >
+                {/* Both encodes are the master's native 640×352. The file this
+                    replaced was upscaled to 854×470, which spent bytes on
+                    interpolated pixels and then compressed the result — it
+                    measured *worse* against the master than either of these
+                    while being half again as large.
+
+                    AV1 first, and its `codecs` string has to be exact: a
+                    browser that cannot decode av01.0.01M.08 needs to read that
+                    from the type and fall through to the H.264 source rather
+                    than commit to a stream it will choke on. */}
+                <source
+                  src="/video/why-valley-verde.av1.mp4"
+                  type='video/mp4; codecs="av01.0.01M.08"'
+                />
+                <source src="/video/why-valley-verde.mp4" type="video/mp4" />
+              </video>
             ) : (
               <button
                 type="button"

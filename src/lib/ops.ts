@@ -1,72 +1,62 @@
+import { ROLES, type Rol } from "@/contextos/identidad/dominio/Rol";
+import { paneles } from "@/lib/paneles";
+
 /**
- * Single source of truth for the operations app (everything under /app).
- * Kept separate from lib/site.ts: that file is marketing copy the client reads,
- * this one is product surface the crew uses.
+ * Textos de la app de operaciones (todo lo que cuelga de /app).
+ *
+ * Aparte de lib/site.ts a propósito: ese archivo es lo que lee el cliente, este
+ * es la herramienta que usa la cuadrilla. El sitio público va en inglés; la app
+ * interna, en español, que es como se trabaja.
  */
 
 export const ops = {
-  name: "Valley Verde Operations",
-  shortName: "Verde Ops",
-  tagline: "Properties, crews and cash flow in one place",
+  nombre: "Valley Verde Operaciones",
+  nombreCorto: "Verde Ops",
+  lema: "Propiedades, cuadrillas y cobranza en un solo lugar",
 } as const;
 
-export type OpsRole = "ADMIN" | "CREW";
+/** Todo lo que cuelga de /app es la app interna y se pinta sin el sitio. */
+export const RUTA_BASE_OPS = "/app";
 
-/** Everything under /app is the operations app and must render without site chrome. */
-export const OPS_BASE_PATH = "/app";
-
-export function isOpsRoute(pathname: string | null | undefined): boolean {
+export function esRutaOps(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  return pathname === OPS_BASE_PATH || pathname.startsWith(`${OPS_BASE_PATH}/`);
+  return pathname === RUTA_BASE_OPS || pathname.startsWith(`${RUTA_BASE_OPS}/`);
 }
 
 /**
- * Demo credentials, surfaced on the sign-in screen on purpose.
+ * Las cuentas que deja sembradas `npm run db:seed`, mostradas en la pantalla de
+ * entrada a propósito: un sistema al que nadie puede entrar no se puede probar.
  *
- * A demo nobody can get into is not a demo. These same values seed the
- * database, so the buttons on the sign-in screen always work.
+ * Son credenciales de arranque. Cuando dejen de serlo, se borra esta lista y
+ * con ella los botones de la pantalla de login.
  */
-export const demoAccounts: {
-  role: OpsRole;
-  label: string;
-  person: string;
-  email: string;
-  password: string;
-  blurb: string;
-}[] = [
-  {
-    role: "ADMIN",
-    label: "Office",
-    person: "Dana Whitfield",
-    email: "dana@valleyverde.com",
-    password: "verde2026",
-    blurb: "Clients, estimates, scheduling and invoicing",
-  },
-  {
-    role: "CREW",
-    label: "Crew lead",
-    person: "Miguel Sandoval",
-    email: "miguel@valleyverde.com",
-    password: "verde2026",
-    blurb: "Today's route and job completion",
-  },
-];
+export const cuentasIniciales: {
+  rol: Rol;
+  usuario: string;
+  contrasena: string;
+  descripcion: string;
+}[] = ROLES.map((rol) => ({
+  rol,
+  usuario: rol,
+  contrasena: rol,
+  descripcion: paneles[rol].descripcion,
+}));
 
-/** What the sign-in panel promises, before anyone has logged in. */
-export const opsHighlights = [
+/** Lo que promete la pantalla de entrada, antes de que nadie haya entrado. */
+export const puntosFuertesOps = [
   {
-    icon: "route" as const,
-    title: "Today's route, already built",
-    body: "Every scheduled stop in driving order, assigned to a crew.",
+    icono: "ruta" as const,
+    titulo: "La ruta del día, ya armada",
+    cuerpo: "Cada parada programada en orden de manejo y asignada a una cuadrilla.",
   },
   {
-    icon: "file" as const,
-    title: "Estimates in under a minute",
-    body: "Pick a property, pick services, send the PDF.",
+    icono: "archivo" as const,
+    titulo: "Cotizaciones en menos de un minuto",
+    cuerpo: "Eliges propiedad, eliges servicios, mandas el PDF.",
   },
   {
-    icon: "wallet" as const,
-    title: "Who paid, who owes",
-    body: "Receivables by client, aged, with nothing to reconcile by hand.",
+    icono: "cartera" as const,
+    titulo: "Quién pagó y quién debe",
+    cuerpo: "Cuentas por cobrar por cliente, con antigüedad y sin cuadrar nada a mano.",
   },
 ];

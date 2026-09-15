@@ -82,6 +82,25 @@
       padding-inline: 2rem;
     }
   }
+
+  /* Hero slideshow: a slow push/drift on each still, so a sharp photograph
+     reads as motion. Each slide sets its own --drift-* values inline; the
+     global prefers-reduced-motion reset above neutralises the animation. */
+  .hero-drift {
+    animation: hero-drift var(--drift-seconds, 30s) ease-in-out infinite alternate;
+    transform: scale(var(--drift-from-scale)) translate3d(var(--drift-from-x), var(--drift-from-y), 0);
+  }
+}
+
+@keyframes hero-drift {
+  from {
+    transform: scale(var(--drift-from-scale))
+      translate3d(var(--drift-from-x), var(--drift-from-y), 0);
+  }
+  to {
+    transform: scale(var(--drift-to-scale))
+      translate3d(var(--drift-to-x), var(--drift-to-y), 0);
+  }
 }
 
 /* Thin, brand-colored scrollbar on desktop */

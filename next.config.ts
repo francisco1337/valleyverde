@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // El driver `mariadb` (por debajo del adaptador de Prisma) carga cosas de
+  // Node en tiempo de ejecución que el bundler no puede seguir. Next externaliza
+  // solo a @prisma/client, no al driver, así que se agrega a mano.
+  serverExternalPackages: ["mariadb"],
+
   images: {
     // AVIF first: roughly 20-30% smaller than WebP at the same quality on the
     // photographic content this site is built from. Browsers that do not take
