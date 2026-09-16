@@ -63,9 +63,12 @@ export default async function PaginaDeClientes() {
               className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 px-5 py-4"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-forest-950">
+                <Link
+                  href={`/app/oficina/clientes/${cliente.id}`}
+                  className="truncate text-sm font-semibold text-forest-950 transition hover:text-forest-700"
+                >
                   {cliente.nombre}
-                </p>
+                </Link>
                 {cliente.contacto ? (
                   <p className="mt-0.5 truncate text-sm text-forest-950/55">
                     {cliente.contacto}

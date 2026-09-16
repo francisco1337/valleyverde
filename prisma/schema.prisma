@@ -1,8 +1,7 @@
 // Esquema de Valley Verde Operations.
 //
-// Se construye por módulos. Hoy están identidad (usuarios y su rol) y la
-// cartera (clientes). Lo que sigue — ubicaciones, servicios, asignaciones,
-// eventos y evidencias — está diseñado en valleyverde.dbml, en la raíz.
+// Módulos: identidad (usuarios), cartera (clientes + ubicaciones),
+// catálogo (servicios), programación (asignaciones + eventos).
 
 generator client {
   provider = "prisma-client"
@@ -14,66 +13,147 @@ datasource db {
   provider = "mysql"
 }
 
-/// Los tres roles del sistema. El login es uno solo; el rol decide a qué
-/// panel aterriza cada persona y qué puede abrir.
 enum Rol {
   ADMINISTRADOR
   OFICINA
   TECNICO
 }
 
+enum Periodicidad {
+  DIARIO
+  SEMANAL
+  QUINCENAL
+  MENSUAL
+}
+
+enum EstadoEvento {
+  PROGRAMADO
+  COMPLETADO
+  CANCELADO
+}
+
 model Usuario {
-  // La identidad la genera el dominio (RepositorioDeUsuarios.siguienteId),
-  // no la base: así un Usuario ya es un Usuario antes de tocar MySQL.
-  id String @id
-
-  /// Con lo que la persona inicia sesión. Se guarda y se compara en
-  /// MAYÚSCULAS para que "tecnico" y "TECNICO" sean la misma cuenta.
-  usuario String @unique
-
-  /// Nombre para mostrar en la interfaz.
-  nombre String
-
-  /// Hash bcrypt. Aquí nunca se guarda una contraseña en texto plano.
+  id           String @id
+  usuario      String @unique
+  nombre       String
   passwordHash String
-
-  rol Rol
-
-  /// Dar de baja a alguien sin borrar su historial.
-  activo Boolean @default(true)
-
+  rol          Rol
+  activo       Boolean  @default(true)
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
+
+  eventosComoTecnico Evento[] @relation("Tecnico")
+  eventosCerrados    Evento[] @relation("CompletadoPor")
 
   @@map("usuarios")
 }
 
-/// Una empresa a la que Valley Verde le presta servicio: la administradora del
-/// centro comercial, la mesa directiva del fraccionamiento, el dueño del
-/// edificio. De aquí van a colgar las ubicaciones.
 model Cliente {
-  // Igual que Usuario: la identidad la genera el dominio, no la base.
-  id String @id
-
-  /// Razón social o nombre comercial. Es como lo busca la oficina.
-  nombre String
-
-  /// La persona con la que se trata. Opcional: a veces se da de alta la
-  /// empresa antes de saber quién va a contestar el teléfono.
+  id       String  @id
+  nombre   String
   contacto String?
-
   telefono String?
   correo   String?
   notas    String? @db.Text
-
-  /// Un cliente con historial no se borra, se desactiva.
-  activo Boolean @default(true)
-
+  activo   Boolean  @default(true)
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
 
-  // La lista de la oficina es "los activos, por nombre". Este índice la cubre
-  // entera: filtra y ordena sin pasar por un filesort.
+  ubicaciones Ubicacion[]
+
   @@index([activo, nombre])
   @@map("clientes")
+}
+
+model Ubicacion {
+  id            String   @id
+  clienteId     String
+  nombre        String
+  direccion     String   @db.VarChar(500)
+  latitud       Decimal? @db.Decimal(9, 6)
+  longitud      Decimal? @db.Decimal(9, 6)
+  notasDeAcceso String?  @db.Text
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  cliente      Cliente      @relation(fields: [clienteId], references: [id])
+  asignaciones Asignacion[]
+  eventos      Evento[]
+
+  @@index([clienteId, activo])
+  @@map("ubicaciones")
+}
+
+model Servicio {
+  id             String   @id
+  nombre         String   @unique
+  descripcion    String?  @db.Text
+  precioSugerido Decimal? @db.Decimal(10, 2)
+  activo         Boolean  @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  asignaciones Asignacion[]
+  eventos      Evento[]
+
+  @@index([activo, nombre])
+  @@map("servicios")
+}
+
+/// El acuerdo recurrente: qué servicio, en qué ubicación, con qué precio y
+/// periodicidad. El técnico NO va aquí — se asigna al evento, no al contrato.
+model Asignacion {
+  id              String       @id
+  ubicacionId     String
+  servicioId      String
+  periodicidad    Periodicidad
+  precioPorEvento Decimal      @db.Decimal(10, 2)
+  fechaInicio     DateTime     @db.Date
+  fechaFin        DateTime     @db.Date
+  activo          Boolean      @default(true)
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  ubicacion Ubicacion @relation(fields: [ubicacionId], references: [id])
+  servicio  Servicio  @relation(fields: [servicioId], references: [id])
+  eventos   Evento[]
+
+  @@index([ubicacionId, activo])
+  @@index([servicioId])
+  @@map("asignaciones")
+}
+
+/// Una visita concreta. Copia precio, servicio y ubicación al generarse.
+/// El técnico se asigna al programar el evento (puede ser null hasta entonces).
+/// El índice único (asignacionId, fechaProgramada, hora) evita duplicados.
+model Evento {
+  id              String       @id
+  asignacionId    String
+  servicioId      String
+  ubicacionId     String
+  tecnicoId       String?
+  precio          Decimal      @db.Decimal(10, 2)
+  fechaProgramada DateTime     @db.Date
+  /// Hora en formato "HH:MM", e.g. "08:30". VARCHAR(5) es más simple en forms.
+  hora            String       @db.VarChar(5)
+  estado          EstadoEvento @default(PROGRAMADO)
+  completadoEn    DateTime?
+  completadoPor   String?
+  notas           String?      @db.Text
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+
+  asignacion    Asignacion @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+  servicio      Servicio   @relation(fields: [servicioId], references: [id])
+  ubicacion     Ubicacion  @relation(fields: [ubicacionId], references: [id])
+  tecnico       Usuario?   @relation("Tecnico", fields: [tecnicoId], references: [id], onDelete: Restrict)
+  cierreUsuario Usuario?   @relation("CompletadoPor", fields: [completadoPor], references: [id], onDelete: Restrict)
+
+  @@unique([asignacionId, fechaProgramada, hora])
+  @@index([tecnicoId, fechaProgramada])
+  @@index([estado, fechaProgramada])
+  @@index([servicioId, estado])
+  @@index([ubicacionId, fechaProgramada])
+  @@map("eventos")
 }

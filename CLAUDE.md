@@ -26,12 +26,13 @@ vía `@prisma/adapter-mariadb`) · `jose` para sesiones · `bcryptjs` · GSAP en
 ```bash
 cp .env.example .env     # DATABASE_URL, DATABASE_SSL_CA, SESSION_SECRET
 npm run db:migrate       # aplica migraciones
-npm run db:seed          # crea una cuenta por rol
+npm run db:seed          # crea una cuenta por rol + servicios de landscaping
 npm run dev
 ```
 
-El seed crea `ADMINISTRADOR`, `OFICINA` y `TECNICO`, cada uno con la contraseña igual al
-usuario. Son credenciales de arranque, no de producción.
+El seed crea `ADMINISTRADOR`, `OFICINA` y `TECNICO` (contraseña = usuario) y los 6 servicios
+de landscaping: Poda de césped, Riego, Poda de arbustos, Limpieza general, Fertilización,
+Control de plagas.
 
 Otros: `db:generate`, `db:push`, `db:studio`. `postinstall` corre `prisma generate`.
 
@@ -55,12 +56,9 @@ páginas, el seed — hablan con casos de uso, nunca con Prisma directo.
 **CQRS-lite.** La pureza hexagonal se paga por archivo, así que se aplica solo donde hay
 invariantes que proteger:
 
-- **Escritura** (crear asignación, generar eventos, completar, congelar precio) → hexagonal completa.
+- **Escritura** (crear asignación, programar evento, completar visita) → hexagonal completa.
 - **Lectura** (listados, tableros, finanzas) → consulta Prisma directa desde el Server Component.
   Sin puerto ni repositorio. Las lecturas no tienen invariantes que proteger.
-
-Referencia de cuánto cuesta lo primero: el contexto `identidad` son 22 archivos y ~870 líneas
-para una entidad y cuatro casos de uso.
 
 ### Acceso y roles
 
@@ -78,32 +76,115 @@ Nunca confíes en el proxy para autorizar. Es una optimización, no una garantí
 
 ### Convenciones de datos
 
-- **IDs**: UUID en `varchar(191)`, generados en el dominio (`repositorio.siguienteId()`), no por
-  la base. Un agregado ya tiene identidad antes de tocar MySQL.
+- **IDs**: UUID en `varchar(191)`, generados en el dominio (`randomUUID()`), no por la base.
 - Tablas en plural y snake_case (`usuarios`), columnas en camelCase (`passwordHash`).
 - Nada se borra: todo lleva `activo` y las llaves foráneas van en `restrict`.
+- `decimal(10,2)` para dinero. Nunca `float`.
+- `DATE` puro para fechas de servicio. Phoenix es MST, no cambia a horario de verano.
+- `hora VARCHAR(5)` en eventos para la hora ("08:30"). Más simple en forms que TIME.
+- Duplicados por nombre: detección case-insensitive vía utf8mb4_unicode_ci, sin LOWER()
+  (LOWER() mata el índice).
 
 ## Modelo del MVP
 
 ```
 clientes ─1:N─ ubicaciones ─1:N─ asignaciones ─1:N─ eventos ─1:N─ evidencias
                                       │                 │
-                        servicios ────┤                 │
-                        usuarios ─────┘─────────────────┘
-                         (TECNICO)
+                        servicios ────┘                 │
+                        usuarios (TECNICO) ─────────────┘
 ```
 
-**La regla que gobierna todo: la asignación es el acuerdo vivo, el evento es el comprobante
-histórico.** Al generarse, el evento **copia** precio, servicio, ubicación y técnico. Cambiar la
-asignación mañana no puede reescribir lo que ya pasó.
+**Regla fundamental: la asignación es el acuerdo vivo, el evento es el comprobante
+histórico.** El técnico se asigna al **evento**, no a la asignación — el contrato dice
+"servicio X en ubicación Y, cada semana, a $Z"; el evento dice "quién lo hizo, cuándo y
+a qué hora".
 
 - `asignaciones` — servicio + periodicidad (`DIARIO|SEMANAL|QUINCENAL|MENSUAL`) + precio por
-  evento + técnico, entre `fechaInicio` y `fechaFin`. **`fechaFin` es obligatoria**: sin ella la
-  serie es infinita.
-- `eventos` — una fila por visita. Estados `PROGRAMADO|COMPLETADO|CANCELADO`. El índice único
-  `(asignacionId, fechaProgramada)` hace idempotente la generación: correrla dos veces no duplica.
-- Las finanzas son `SUM(precio)` de los eventos completados. **No hay facturas, pagos ni cuentas
-  por cobrar** — eso es ingreso devengado, no cobrado.
+  evento, entre `fechaInicio` y `fechaFin`. **Sin `tecnicoId`** — el técnico se asigna al programar.
+- `eventos` — una fila por visita. `hora VARCHAR(5)` (p.ej. "08:30"). `tecnicoId` nullable
+  (puede quedar sin asignar). El índice único `(asignacionId, fechaProgramada, hora)` hace
+  idempotente la generación.
+- Las finanzas son `SUM(precio)` de los eventos completados.
+
+## Estado de módulos
+
+| Módulo | Ruta | Estado |
+|--------|------|--------|
+| Login | `/app/login` | ✅ Terminado |
+| Panel OFICINA | `/app/oficina` | ✅ Terminado |
+| **Clientes** | `/app/oficina/clientes` | ✅ Terminado |
+| **Detalle de cliente + ubicaciones** | `/app/oficina/clientes/[clienteId]` | ✅ Terminado |
+| **Nueva ubicación** | `/app/oficina/clientes/[clienteId]/ubicaciones/nueva` | ✅ Terminado |
+| **Asignaciones** | `/app/oficina/asignaciones` | ✅ Terminado |
+| **Nueva asignación** | `/app/oficina/asignaciones/nueva` | ✅ Terminado |
+| **Programar** | `/app/oficina/programar` | ✅ Terminado |
+| Ruta del técnico | `/app/tecnico/ruta` | ⬜ Pendiente |
+| Marcar completado | — | ⬜ Pendiente |
+| Cobranza / finanzas | — | ⬜ Pendiente |
+| Catálogo de servicios (admin) | `/app/administrador/servicios` | ⬜ Pendiente (seed cubre el demo) |
+
+## Contextos implementados
+
+```
+src/contextos/
+  compartido/
+    dominio/
+      ErrorDeDominio.ts       ← base para todos los errores de dominio
+    infraestructura/
+      persistencia/
+        ClientePrisma.ts      ← singleton Prisma, compartido por todos los contextos
+  identidad/                  ← usuarios, login, sesiones
+  clientes/                   ← clientes + ubicaciones (mismo contexto: ubicación pertenece a cliente)
+  asignaciones/               ← contratos recurrentes
+  eventos/                    ← visitas programadas
+```
+
+### Patrón de un contexto (ejemplo: clientes)
+
+```
+src/contextos/clientes/
+  dominio/
+    Cliente.ts                ← agregado; static registrar() / rehidratar()
+    Ubicacion.ts              ← agregado; static registrar()
+    NombreDeCliente.ts        ← value object con normalización y clave de comparación
+    CorreoElectronico.ts      ← value object con validación y normalización a lowercase
+    puertos/
+      RepositorioDeClientes.ts
+      RepositorioDeUbicaciones.ts
+    errores/
+      NombreDeClienteRepetido.ts
+  aplicacion/
+    RegistrarCliente.ts
+    RegistrarUbicacion.ts
+  infraestructura/
+    persistencia/
+      PrismaRepositorioDeClientes.ts
+      PrismaRepositorioDeUbicaciones.ts
+    consultas/
+      ClientesDeLaCartera.ts  ← lectura directa Prisma, server-only
+      UbicacionesDelCliente.ts
+    dependencias.ts           ← composition root, lazy instantiation
+```
+
+### Server actions
+
+Patrón: `useActionState` en el cliente + `useFormStatus` en `<BotonGuardar>` separado.
+
+```ts
+// estado.ts — separado porque "use server" sólo puede exportar async functions
+export type ValoresDeX = { campo: string };
+export type EstadoDeAltaDeX = { error: string | null; valores: ValoresDeX };
+export const ESTADO_ALTA_INICIAL: EstadoDeAltaDeX = { error: null, valores: { campo: "" } };
+
+// actions.ts
+"use server"
+export async function hacerAlgo(_estado: EstadoDeAltaDeX, datos: FormData): Promise<EstadoDeAltaDeX> {
+  await requerirRol("OFICINA");  // re-check en cada acción
+  // ...
+  revalidatePath("/ruta");
+  redirect("/ruta");  // fuera del try/catch
+}
+```
 
 ## Trampas de este entorno
 
@@ -118,8 +199,10 @@ Difieren de lo que uno asume por defecto. Lee `node_modules/next/dist/docs/` ant
 - **Dinero en `decimal(10,2)`, nunca `float`.**
 - **`next.config.ts` tiene un allowlist de `qualities`.** Un `quality={82}` que no esté en la lista
   se sirve silenciosamente a 75.
-- El sitio público y `/app` comparten layout raíz pero no chrome: `SiteShell` decide por pathname.
-  Si `/app` crece, conviene partir en route groups `(sitio)` y `(ops)`.
+- **`server-only`** en lecturas y raíces de composición impide importar desde el cliente.
+- Las tablas ya existen en Aiven. La migración
+  `20260915070000_ubicaciones_servicios_asignaciones_eventos` fue marcada como aplicada con
+  `prisma migrate resolve --applied` porque las tablas las creó un `db push` previo.
 
 ## Decisiones abiertas
 
@@ -132,3 +215,5 @@ Difieren de lo que uno asume por defecto. Lee `node_modules/next/dist/docs/` ant
   `pagado` en `eventos`.
 - **Idioma de la app de campo.** Las cuadrillas de landscaping en Phoenix son mayoritariamente
   hispanohablantes; el dominio ya está en español, pero la interfaz no se ha decidido.
+- **Ruta del técnico.** `/app/tecnico/ruta` — pendiente. Debe mostrar los eventos PROGRAMADOS
+  del día de hoy ordenados por hora, con dirección y enlace a Google Maps.
