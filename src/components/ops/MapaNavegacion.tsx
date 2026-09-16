@@ -52,12 +52,17 @@ export function MapaNavegacion({ latitud, longitud, direccion, cliente, t }: Pro
 
     mapa.current = m;
 
+    // El geocoding es async; si el efecto se limpia (navegación, o el doble
+    // montaje de Strict Mode en dev) antes de que resuelva, `m` ya está
+    // destruido y pintar sobre él revienta con "appendChild of undefined".
+    let cancelado = false;
+
     async function inicializar() {
       let destino: [number, number] | null =
         latitud !== null && longitud !== null ? [latitud, longitud] : null;
 
       if (!destino) destino = await geocodificar(direccion);
-      if (!destino) return;
+      if (!destino || cancelado) return;
 
       coordsDestino.current = destino;
       m.setView(destino, 15);
@@ -71,6 +76,7 @@ export function MapaNavegacion({ latitud, longitud, direccion, cliente, t }: Pro
     inicializar();
 
     return () => {
+      cancelado = true;
       m.remove();
       mapa.current = null;
       coordsDestino.current = null;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DollarSign, Layers, Plus } from "lucide-react";
+import { ArrowLeft, DollarSign, Layers, Plus } from "lucide-react";
 
 import { catalogoDeServicios } from "@/contextos/asignaciones/infraestructura/consultas/CatalogoDeServicios";
 import { requerirRol } from "@/lib/acceso";
@@ -19,6 +19,14 @@ export default async function PaginaDeCatalogoDeServicios() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+      <Link
+        href="/app/administrador"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-forest-950/55 transition hover:text-forest-800"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {t.comun.panel}
+      </Link>
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">

@@ -45,6 +45,11 @@ export function MapaPines({ paradas }: { paradas: Parada[] }) {
 
     mapa.current = m;
 
+    // El geocoding es async; si el efecto se limpia (navegación, o el doble
+    // montaje de Strict Mode en dev) antes de que resuelva, `m` ya está
+    // destruido y pintar sobre él revienta con "appendChild of undefined".
+    let cancelado = false;
+
     async function agregarPines() {
       const bounds = L.latLngBounds([]);
       let hayPines = false;
@@ -55,7 +60,7 @@ export function MapaPines({ paradas }: { paradas: Parada[] }) {
             p.latitud !== 0 || p.longitud !== 0 ? [p.latitud, p.longitud] : null;
 
           if (!coords) coords = await geocodificar(p.direccion, NORTE_PHOENIX);
-          if (!coords) return;
+          if (!coords || cancelado) return;
 
           hayPines = true;
           bounds.extend(coords);
@@ -65,6 +70,8 @@ export function MapaPines({ paradas }: { paradas: Parada[] }) {
             .bindPopup(`<strong>${p.hora} — ${p.cliente}</strong><br/><small>${p.direccion}</small>`);
         }),
       );
+
+      if (cancelado) return;
 
       if (hayPines) {
         if (paradas.length === 1) {
@@ -78,6 +85,7 @@ export function MapaPines({ paradas }: { paradas: Parada[] }) {
     agregarPines();
 
     return () => {
+      cancelado = true;
       m.remove();
       mapa.current = null;
     };

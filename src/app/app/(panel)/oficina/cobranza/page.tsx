@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { DollarSign } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, DollarSign } from "lucide-react";
 
 import { requerirRol } from "@/lib/acceso";
 import { diccionario } from "@/lib/i18n";
@@ -32,6 +33,14 @@ export default async function PaginaCobranza() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+      <Link
+        href="/app/oficina"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-forest-950/55 transition hover:text-forest-800"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        {t.comun.panel}
+      </Link>
+
       <header className="mb-8">
         <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
           {t.cobranza.finanzas}

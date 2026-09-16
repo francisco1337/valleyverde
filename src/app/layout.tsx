@@ -58,7 +58,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      className={`${montserrat.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
         <SiteShell
           header={<Header />}
