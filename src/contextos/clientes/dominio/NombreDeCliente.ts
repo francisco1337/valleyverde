@@ -1,8 +1,8 @@
 import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 
 export class NombreDeClienteInvalido extends ErrorDeDominio {
-  constructor(motivo: string) {
-    super(motivo);
+  constructor(motivo: string, codigo: string) {
+    super(motivo, codigo);
   }
 }
 
@@ -24,12 +24,13 @@ export class NombreDeCliente {
     const normalizado = valor.trim().replace(/\s+/g, " ");
 
     if (!normalizado) {
-      throw new NombreDeClienteInvalido("Escribe el nombre del cliente.");
+      throw new NombreDeClienteInvalido("Escribe el nombre del cliente.", "nombre_cliente_vacio");
     }
 
     if (normalizado.length > NombreDeCliente.LARGO_MAXIMO) {
       throw new NombreDeClienteInvalido(
         `El nombre no puede pasar de ${NombreDeCliente.LARGO_MAXIMO} caracteres.`,
+        "nombre_cliente_muy_largo",
       );
     }
 

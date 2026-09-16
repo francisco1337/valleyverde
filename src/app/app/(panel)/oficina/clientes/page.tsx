@@ -4,6 +4,7 @@ import { Mail, Phone, Plus, Users } from "lucide-react";
 
 import { clientesDeLaCartera } from "@/contextos/clientes/infraestructura/consultas/ClientesDeLaCartera";
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Clientes",
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
 export default async function PaginaDeClientes() {
   // La puerta: aquí no entra nadie con otro rol, aunque escriba la URL a mano.
   await requerirRol("OFICINA");
+  const t = await diccionario();
 
   const cartera = await clientesDeLaCartera();
 
@@ -21,15 +23,13 @@ export default async function PaginaDeClientes() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
-            Cartera
+            {t.clientes.cartera}
           </p>
           <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">
-            Clientes
+            {t.clientes.clientes}
           </h1>
           <p className="mt-2 text-sm text-forest-950/60">
-            {cartera.length === 0
-              ? "Todavía no hay ninguno."
-              : `${cartera.length} ${cartera.length === 1 ? "cliente activo" : "clientes activos"}.`}
+            {cartera.length === 0 ? t.clientes.todaviaNoHayNinguno : t.clientes.clientesActivos(cartera.length)}
           </p>
         </div>
 
@@ -38,7 +38,7 @@ export default async function PaginaDeClientes() {
           className="flex items-center gap-2 rounded-xl bg-forest-700 px-4 py-2.5 text-sm font-semibold text-sand-50 shadow-sm transition hover:bg-forest-600 focus-visible:ring-2 focus-visible:ring-forest-500 focus-visible:ring-offset-2 focus-visible:ring-offset-sand-50 focus-visible:outline-none"
         >
           <Plus className="h-4 w-4" aria-hidden />
-          Nuevo cliente
+          {t.clientes.nuevoCliente}
         </Link>
       </header>
 
@@ -48,11 +48,10 @@ export default async function PaginaDeClientes() {
             <Users className="h-5 w-5" aria-hidden />
           </span>
           <p className="mt-4 text-sm font-semibold text-forest-950">
-            La cartera está vacía
+            {t.clientes.carteraVacia}
           </p>
           <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-forest-950/55">
-            Da de alta el primer cliente. Después le cuelgas sus ubicaciones y a
-            cada ubicación los servicios que tiene contratados.
+            {t.clientes.carteraVaciaCuerpo}
           </p>
         </div>
       ) : (

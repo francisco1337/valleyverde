@@ -1,55 +1,113 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Navigation, MapPin, Loader2 } from "lucide-react";
+import "leaflet/dist/leaflet.css";
+import { Loader2, MapPin, Navigation } from "lucide-react";
 
-const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
-const iconRetinaUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
-const shadowUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
+import { geocodificar } from "@/lib/geocodificar";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
 type Props = {
-  latitud: number;
-  longitud: number;
+  latitud: number | null;
+  longitud: number | null;
   direccion: string;
   cliente: string;
+  t: DiccionarioCliente;
 };
 
-function AjustarVista({
-  destino,
-  origen,
-}: {
-  destino: [number, number];
-  origen: [number, number] | null;
-}) {
-  const map = useMap();
-  const ajustado = useRef(false);
+function icono(color: "verde" | "azul") {
+  const svg =
+    color === "verde"
+      ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="#1a6b3a" d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`
+      : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36"><path fill="#2563eb" d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`;
 
-  useEffect(() => {
-    if (!ajustado.current) {
-      if (origen) {
-        map.fitBounds([destino, origen], { padding: [40, 40] });
-      } else {
-        map.setView(destino, 15);
-      }
-      ajustado.current = true;
-    }
-  }, [map, destino, origen]);
-
-  return null;
+  return L.divIcon({
+    html: svg,
+    className: "",
+    iconSize: [24, 36],
+    iconAnchor: [12, 36],
+    popupAnchor: [0, -36],
+  });
 }
 
-export function MapaNavegacion({ latitud, longitud, direccion, cliente }: Props) {
+export function MapaNavegacion({ latitud, longitud, direccion, cliente, t }: Props) {
+  const contenedor = useRef<HTMLDivElement>(null);
+  const mapa = useRef<L.Map | null>(null);
+  const markerOrigen = useRef<L.Marker | null>(null);
+  const lineaRef = useRef<L.Polyline | null>(null);
+  const coordsDestino = useRef<[number, number] | null>(null);
   const [ubicacionActual, setUbicacionActual] = useState<[number, number] | null>(null);
   const [buscando, setBuscando] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+    if (!contenedor.current || mapa.current) return;
+
+    const m = L.map(contenedor.current, { zoomControl: true }).setView([33.65, -112.0], 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(m);
+
+    mapa.current = m;
+
+    async function inicializar() {
+      let destino: [number, number] | null =
+        latitud !== null && longitud !== null ? [latitud, longitud] : null;
+
+      if (!destino) destino = await geocodificar(direccion);
+      if (!destino) return;
+
+      coordsDestino.current = destino;
+      m.setView(destino, 15);
+
+      L.marker(destino, { icon: icono("verde") })
+        .addTo(m)
+        .bindPopup(`<strong>${cliente}</strong><br/><small>${direccion}</small>`)
+        .openPopup();
+    }
+
+    inicializar();
+
+    return () => {
+      m.remove();
+      mapa.current = null;
+      coordsDestino.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const m = mapa.current;
+    if (!m || !ubicacionActual) return;
+
+    const [lat, lng] = ubicacionActual;
+
+    if (markerOrigen.current) {
+      markerOrigen.current.setLatLng([lat, lng]);
+    } else {
+      markerOrigen.current = L.marker([lat, lng], { icon: icono("azul") })
+        .addTo(m)
+        .bindPopup(t.tecnico.mapa.tuUbicacion);
+    }
+
+    if (lineaRef.current) {
+      lineaRef.current.remove();
+    }
+
+    const destino = coordsDestino.current;
+    if (destino) {
+      lineaRef.current = L.polyline([[lat, lng], destino], {
+        color: "#1a6b3a",
+        weight: 3,
+        dashArray: "8 6",
+        opacity: 0.8,
+      }).addTo(m);
+
+      m.fitBounds([[lat, lng], destino], { padding: [40, 40] });
+    }
+  }, [ubicacionActual]);
 
   function localizarme() {
     if (!navigator.geolocation) return;
@@ -64,56 +122,18 @@ export function MapaNavegacion({ latitud, longitud, direccion, cliente }: Props)
     );
   }
 
-  const destino: [number, number] = [latitud, longitud];
-
-  const urlNavegacion = ubicacionActual
-    ? `https://www.google.com/maps/dir/${ubicacionActual[0]},${ubicacionActual[1]}/${latitud},${longitud}`
-    : `https://www.google.com/maps/search/?api=1&query=${latitud},${longitud}`;
-
-  const iconoVerde = L.divIcon({
-    className: "",
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:#1a6b3a;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
+  const destino = coordsDestino.current;
+  const urlNavegacion =
+    ubicacionActual && destino
+      ? `https://www.google.com/maps/dir/${ubicacionActual[0]},${ubicacionActual[1]}/${destino[0]},${destino[1]}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
 
   return (
     <div className="flex h-full flex-col">
       <div className="relative flex-1">
-        <MapContainer
-          center={destino}
-          zoom={15}
-          style={{ height: "100%", width: "100%" }}
-          scrollWheelZoom={false}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        <div ref={contenedor} className="h-full w-full" />
 
-          <Marker position={destino}>
-            <Popup>
-              <strong className="block">{cliente}</strong>
-              <span className="text-xs">{direccion}</span>
-            </Popup>
-          </Marker>
-
-          {ubicacionActual && (
-            <>
-              <Marker position={ubicacionActual} icon={iconoVerde}>
-                <Popup>Tu ubicación</Popup>
-              </Marker>
-              <Polyline
-                positions={[ubicacionActual, destino]}
-                pathOptions={{ color: "#1a6b3a", weight: 3, dashArray: "8 6", opacity: 0.8 }}
-              />
-            </>
-          )}
-
-          <AjustarVista destino={destino} origen={ubicacionActual} />
-        </MapContainer>
-
-        <div className="absolute bottom-3 right-3 z-[1000] flex flex-col gap-2">
+        <div className="absolute bottom-3 right-3 z-[1000]">
           <button
             onClick={localizarme}
             disabled={buscando}
@@ -124,7 +144,7 @@ export function MapaNavegacion({ latitud, longitud, direccion, cliente }: Props)
             ) : (
               <MapPin className="h-3.5 w-3.5" />
             )}
-            Mi ubicación
+            {t.tecnico.mapa.miUbicacion}
           </button>
         </div>
       </div>
@@ -137,7 +157,7 @@ export function MapaNavegacion({ latitud, longitud, direccion, cliente }: Props)
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-forest-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-forest-800"
         >
           <Navigation className="h-4 w-4" aria-hidden />
-          Navegar con Google Maps
+          {t.tecnico.mapa.navegarConGoogleMaps}
         </a>
       </div>
     </div>

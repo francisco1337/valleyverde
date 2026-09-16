@@ -1,19 +1,10 @@
 import { ROLES, type Rol } from "@/contextos/identidad/dominio/Rol";
-import { paneles } from "@/lib/paneles";
 
 /**
- * Textos de la app de operaciones (todo lo que cuelga de /app).
- *
- * Aparte de lib/site.ts a propósito: ese archivo es lo que lee el cliente, este
- * es la herramienta que usa la cuadrilla. El sitio público va en inglés; la app
- * interna, en español, que es como se trabaja.
+ * Datos de la app de operaciones que no dependen del idioma (todo lo que
+ * cuelga de /app). El texto sí depende del idioma y vive en
+ * `src/lib/i18n/slices/login.ts`.
  */
-
-export const ops = {
-  nombre: "Valley Verde Operaciones",
-  nombreCorto: "Verde Ops",
-  lema: "Propiedades, cuadrillas y cobranza en un solo lugar",
-} as const;
 
 /** Todo lo que cuelga de /app es la app interna y se pinta sin el sitio. */
 export const RUTA_BASE_OPS = "/app";
@@ -30,33 +21,6 @@ export function esRutaOps(pathname: string | null | undefined): boolean {
  * Son credenciales de arranque. Cuando dejen de serlo, se borra esta lista y
  * con ella los botones de la pantalla de login.
  */
-export const cuentasIniciales: {
-  rol: Rol;
-  usuario: string;
-  contrasena: string;
-  descripcion: string;
-}[] = ROLES.map((rol) => ({
-  rol,
-  usuario: rol,
-  contrasena: rol,
-  descripcion: paneles[rol].descripcion,
-}));
-
-/** Lo que promete la pantalla de entrada, antes de que nadie haya entrado. */
-export const puntosFuertesOps = [
-  {
-    icono: "ruta" as const,
-    titulo: "La ruta del día, ya armada",
-    cuerpo: "Cada parada programada en orden de manejo y asignada a una cuadrilla.",
-  },
-  {
-    icono: "archivo" as const,
-    titulo: "Cotizaciones en menos de un minuto",
-    cuerpo: "Eliges propiedad, eliges servicios, mandas el PDF.",
-  },
-  {
-    icono: "cartera" as const,
-    titulo: "Quién pagó y quién debe",
-    cuerpo: "Cuentas por cobrar por cliente, con antigüedad y sin cuadrar nada a mano.",
-  },
-];
+export const cuentasIniciales: { rol: Rol; usuario: string; contrasena: string }[] = ROLES.map(
+  (rol) => ({ rol, usuario: rol, contrasena: rol }),
+);

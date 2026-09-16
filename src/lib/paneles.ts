@@ -1,59 +1,53 @@
 import type { Rol } from "@/contextos/identidad/dominio/Rol";
 
-export type Seccion = {
-  titulo: string;
-  resumen: string;
-  ruta?: string;
-};
+/**
+ * Sólo rutas — el texto (etiqueta, descripción, título/resumen de cada
+ * sección) vive en el diccionario bilingüe (`src/lib/i18n/slices/paneles.ts`)
+ * porque depende del idioma activo. `clave` conecta ambos lados.
+ */
+export type ClaveDeSeccion =
+  | "servicios"
+  | "reportes"
+  | "clientes"
+  | "asignaciones"
+  | "programar"
+  | "cobranza"
+  | "trabajos"
+  | "ruta"
+  | "historial";
 
-export type Panel = {
-  etiqueta: string;
-  descripcion: string;
-  ruta: string;
-  secciones: Seccion[];
-};
+type SeccionRuta = { clave: ClaveDeSeccion; ruta?: string };
 
-export const paneles: Record<Rol, Panel> = {
+type PanelRutas = { ruta: string; secciones: SeccionRuta[] };
+
+export const paneles: Record<Rol, PanelRutas> = {
   ADMINISTRADOR: {
-    etiqueta: "ADMINISTRADOR",
-    descripcion: "Acceso completo: usuarios, operación y facturación.",
     ruta: "/app/administrador",
     secciones: [
-      { titulo: "Usuarios y permisos", resumen: "Altas, bajas y cambios de rol." },
-      { titulo: "Catálogo de servicios", resumen: "Qué servicios ofrece la empresa." },
-      { titulo: "Reportes", resumen: "Cómo va el negocio." },
+      { clave: "servicios", ruta: "/app/administrador/servicios" },
+      { clave: "reportes", ruta: "/app/administrador/reportes" },
+      { clave: "clientes", ruta: "/app/oficina/clientes" },
+      { clave: "asignaciones", ruta: "/app/oficina/asignaciones" },
+      { clave: "programar", ruta: "/app/oficina/programar" },
+      { clave: "cobranza", ruta: "/app/oficina/cobranza" },
+      { clave: "trabajos", ruta: "/app/oficina/trabajos" },
     ],
   },
   OFICINA: {
-    etiqueta: "OFICINA",
-    descripcion: "Clientes, contratos, agenda y cobranza.",
     ruta: "/app/oficina",
     secciones: [
-      {
-        titulo: "Clientes",
-        resumen: "Contactos y propiedades a su nombre.",
-        ruta: "/app/oficina/clientes",
-      },
-      {
-        titulo: "Asignaciones",
-        resumen: "Contratos recurrentes por propiedad.",
-        ruta: "/app/oficina/asignaciones",
-      },
-      {
-        titulo: "Programar",
-        resumen: "Agenda visitas asignando técnico, fecha y hora.",
-        ruta: "/app/oficina/programar",
-      },
-      { titulo: "Cobranza", resumen: "Quién pagó y quién debe." },
+      { clave: "clientes", ruta: "/app/oficina/clientes" },
+      { clave: "asignaciones", ruta: "/app/oficina/asignaciones" },
+      { clave: "programar", ruta: "/app/oficina/programar" },
+      { clave: "cobranza", ruta: "/app/oficina/cobranza" },
+      { clave: "trabajos", ruta: "/app/oficina/trabajos" },
     ],
   },
   TECNICO: {
-    etiqueta: "TECNICO",
-    descripcion: "Ruta del día y cierre de trabajos en campo.",
     ruta: "/app/tecnico",
     secciones: [
-      { titulo: "Mi ruta de hoy", resumen: "Las paradas en orden de manejo." },
-      { titulo: "Trabajos", resumen: "Marcar terminado y subir fotos." },
+      { clave: "ruta", ruta: "/app/tecnico/ruta" },
+      { clave: "historial", ruta: "/app/tecnico/historial" },
     ],
   },
 };

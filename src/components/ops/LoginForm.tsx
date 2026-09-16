@@ -6,8 +6,9 @@ import { Eye, EyeOff, LoaderCircle, LogIn, TriangleAlert } from "lucide-react";
 import { iniciarSesion } from "@/app/app/login/actions";
 import { ESTADO_LOGIN_INICIAL } from "@/app/app/login/estado";
 import { cuentasIniciales } from "@/lib/ops";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
-export function LoginForm() {
+export function LoginForm({ t }: { t: DiccionarioCliente }) {
   const [estado, enviar, pendiente] = useActionState(
     iniciarSesion,
     ESTADO_LOGIN_INICIAL,
@@ -27,7 +28,7 @@ export function LoginForm() {
             htmlFor="usuario"
             className="block text-xs font-semibold tracking-wide text-forest-900/70 uppercase"
           >
-            Usuario
+            {t.login.usuario}
           </label>
           <input
             id="usuario"
@@ -49,7 +50,7 @@ export function LoginForm() {
             htmlFor="contrasena"
             className="block text-xs font-semibold tracking-wide text-forest-900/70 uppercase"
           >
-            Contraseña
+            {t.login.contrasena}
           </label>
 
           <div className="relative">
@@ -68,7 +69,7 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setVerContrasena((valor) => !valor)}
-              aria-label={verContrasena ? "Ocultar contraseña" : "Mostrar contraseña"}
+              aria-label={verContrasena ? t.login.ocultarContrasena : t.login.mostrarContrasena}
               className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-forest-900/45 transition hover:text-forest-700 focus-visible:ring-2 focus-visible:ring-forest-400 focus-visible:outline-none"
             >
               {verContrasena ? (
@@ -97,12 +98,12 @@ export function LoginForm() {
           {pendiente ? (
             <>
               <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-              Entrando…
+              {t.login.entrando}
             </>
           ) : (
             <>
               <LogIn className="h-4 w-4" aria-hidden />
-              Entrar
+              {t.login.entrar}
             </>
           )}
         </button>
@@ -112,7 +113,7 @@ export function LoginForm() {
           `cuentasIniciales` el día que haya usuarios de verdad. */}
       <div className="rounded-xl border border-dashed border-sand-300 bg-sand-100/60 p-4">
         <p className="text-[11px] font-semibold tracking-[0.14em] text-forest-900/50 uppercase">
-          Cuentas de prueba
+          {t.login.cuentasDePrueba}
         </p>
 
         <div className="mt-3 grid gap-2">
@@ -131,7 +132,7 @@ export function LoginForm() {
                 {cuenta.rol}
               </span>
               <span className="text-[11px] text-forest-950/45">
-                {cuenta.descripcion}
+                {t.paneles[cuenta.rol].descripcion}
               </span>
             </button>
           ))}

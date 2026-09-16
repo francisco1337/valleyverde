@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { traducirError } from "@/lib/i18n/traducirError";
 import { clientes } from "@/contextos/clientes/infraestructura/dependencias";
 import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 import {
@@ -33,7 +35,8 @@ export async function registrarUbicacion(
     });
   } catch (error) {
     if (error instanceof ErrorDeDominio) {
-      return { error: error.message, valores };
+      const t = await diccionario();
+      return { error: traducirError(error, t), valores };
     }
     throw error;
   }

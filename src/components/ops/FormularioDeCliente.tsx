@@ -10,6 +10,7 @@ import {
   ESTADO_ALTA_INICIAL,
   type ValoresDeCliente,
 } from "@/app/app/(panel)/oficina/clientes/estado";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
 const CLASES_CAMPO =
   "w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-forest-950 outline-none transition placeholder:text-forest-950/35 focus:border-forest-400 focus:ring-4 focus:ring-forest-500/10 disabled:opacity-60";
@@ -18,10 +19,12 @@ function Etiqueta({
   htmlFor,
   children,
   opcional,
+  t,
 }: {
   htmlFor: string;
   children: React.ReactNode;
   opcional?: boolean;
+  t: DiccionarioCliente;
 }) {
   return (
     <label
@@ -31,7 +34,7 @@ function Etiqueta({
       {children}
       {opcional ? (
         <span className="text-[10px] font-medium tracking-normal text-forest-950/35 normal-case">
-          opcional
+          {t.comun.opcional}
         </span>
       ) : null}
     </label>
@@ -42,7 +45,7 @@ function Etiqueta({
  * El botón vive en su propio componente porque `useFormStatus` sólo reporta el
  * envío si se lee desde un hijo del <form>, no desde el componente que lo pinta.
  */
-function BotonGuardar() {
+function BotonGuardar({ t }: { t: DiccionarioCliente }) {
   const { pending } = useFormStatus();
 
   return (
@@ -54,19 +57,19 @@ function BotonGuardar() {
       {pending ? (
         <>
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-          Guardando…
+          {t.comun.guardando}
         </>
       ) : (
         <>
           <Save className="h-4 w-4" aria-hidden />
-          Guardar cliente
+          {t.clientes.form.guardarCliente}
         </>
       )}
     </button>
   );
 }
 
-export function FormularioDeCliente() {
+export function FormularioDeCliente({ t }: { t: DiccionarioCliente }) {
   const [estado, accion] = useActionState(registrarCliente, ESTADO_ALTA_INICIAL);
 
   // Si el alta falló, se repinta lo que la persona ya había escrito.
@@ -75,7 +78,7 @@ export function FormularioDeCliente() {
   return (
     <form action={accion} className="space-y-5" noValidate>
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="nombre">Nombre o razón social</Etiqueta>
+        <Etiqueta htmlFor="nombre" t={t}>{t.clientes.form.nombreORazonSocial}</Etiqueta>
         <input
           id="nombre"
           name="nombre"
@@ -84,15 +87,15 @@ export function FormularioDeCliente() {
           autoFocus
           maxLength={160}
           defaultValue={v.nombre}
-          placeholder="Administradora Plaza Norte S.A. de C.V."
+          placeholder={t.clientes.form.nombrePlaceholder}
           className={CLASES_CAMPO}
         />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Etiqueta htmlFor="contacto" opcional>
-            Persona de contacto
+          <Etiqueta htmlFor="contacto" opcional t={t}>
+            {t.clientes.form.personaDeContacto}
           </Etiqueta>
           <input
             id="contacto"
@@ -100,14 +103,14 @@ export function FormularioDeCliente() {
             type="text"
             maxLength={160}
             defaultValue={v.contacto}
-            placeholder="Dana Whitfield"
+            placeholder={t.clientes.form.contactoPlaceholder}
             className={CLASES_CAMPO}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Etiqueta htmlFor="telefono" opcional>
-            Teléfono
+          <Etiqueta htmlFor="telefono" opcional t={t}>
+            {t.clientes.form.telefono}
           </Etiqueta>
           <input
             id="telefono"
@@ -123,8 +126,8 @@ export function FormularioDeCliente() {
       </div>
 
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="correo" opcional>
-          Correo
+        <Etiqueta htmlFor="correo" opcional t={t}>
+          {t.clientes.form.correo}
         </Etiqueta>
         <input
           id="correo"
@@ -139,8 +142,8 @@ export function FormularioDeCliente() {
       </div>
 
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="notas" opcional>
-          Notas
+        <Etiqueta htmlFor="notas" opcional t={t}>
+          {t.clientes.form.notas}
         </Etiqueta>
         <textarea
           id="notas"
@@ -148,7 +151,7 @@ export function FormularioDeCliente() {
           rows={3}
           maxLength={2000}
           defaultValue={v.notas}
-          placeholder="Cómo facturan, con quién hay que hablar, horarios permitidos…"
+          placeholder={t.clientes.form.notasPlaceholder}
           className={`${CLASES_CAMPO} resize-y`}
         />
       </div>
@@ -163,12 +166,12 @@ export function FormularioDeCliente() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <BotonGuardar />
+        <BotonGuardar t={t} />
         <Link
           href="/app/oficina/clientes"
           className="rounded-xl px-4 py-3 text-sm font-medium text-forest-950/55 transition hover:bg-sand-100 hover:text-forest-800"
         >
-          Cancelar
+          {t.comun.cancelar}
         </Link>
       </div>
     </form>

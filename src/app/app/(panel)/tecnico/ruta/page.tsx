@@ -4,6 +4,10 @@ import type { Metadata } from "next";
 
 import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
 import { requerirRol } from "@/lib/acceso";
+import { hoyEnPhoenix } from "@/lib/tiempo";
+import { diccionario } from "@/lib/i18n";
+import { idiomaActual } from "@/lib/idioma";
+import { formatearFecha } from "@/lib/i18n/fecha";
 import { MapaPinesLazy } from "@/components/ops/MapaPinesLazy";
 
 export const metadata: Metadata = {
@@ -11,15 +15,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-/** Fecha de hoy en la zona horaria de Phoenix (MST, UTC−7, sin horario de verano). */
-function hoyEnPhoenix(): Date {
-  const ahoraUTC = new Date();
-  const mst = new Date(ahoraUTC.getTime() - 7 * 60 * 60 * 1000);
-  return new Date(mst.getFullYear(), mst.getMonth(), mst.getDate());
-}
-
 export default async function PaginaRutaDelDia() {
   const usuario = await requerirRol("TECNICO");
+  const [t, idioma] = await Promise.all([diccionario(), idiomaActual()]);
 
   const hoy = hoyEnPhoenix();
   const manana = new Date(hoy);
@@ -57,7 +55,7 @@ export default async function PaginaRutaDelDia() {
     longitud: e.ubicacion.longitud ? Number(e.ubicacion.longitud) : 0,
   }));
 
-  const fechaTexto = hoy.toLocaleDateString("es-MX", {
+  const fechaTexto = formatearFecha(hoy, idioma, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -73,7 +71,7 @@ export default async function PaginaRutaDelDia() {
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-forest-950/55 transition hover:text-forest-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        Panel
+        {t.comun.panel}
       </Link>
 
       <header className="mb-6">
@@ -81,12 +79,12 @@ export default async function PaginaRutaDelDia() {
           {fechaTexto}
         </p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-forest-950">
-          Mi ruta de hoy
+          {t.tecnico.ruta.miRutaDeHoy}
         </h1>
         {eventos.length > 0 && (
           <p className="mt-1.5 text-sm text-forest-950/55">
-            {pendientes} pendiente{pendientes !== 1 ? "s" : ""}
-            {completados > 0 && ` · ${completados} completado${completados !== 1 ? "s" : ""}`}
+            {t.tecnico.ruta.pendiente(pendientes)}
+            {completados > 0 && t.tecnico.ruta.completado(completados)}
           </p>
         )}
       </header>
@@ -105,7 +103,7 @@ export default async function PaginaRutaDelDia() {
         <div className="rounded-2xl border border-sand-200 bg-white p-10 text-center">
           <MapPin className="mx-auto mb-3 h-8 w-8 text-forest-200" />
           <p className="text-sm font-medium text-forest-950/60">
-            No tienes trabajos programados para hoy.
+            {t.tecnico.ruta.sinTrabajosHoy}
           </p>
         </div>
       ) : (

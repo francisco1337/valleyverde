@@ -4,12 +4,14 @@ import Link from "next/link";
 import { ArrowLeft, FileText, Route, ShieldCheck, Wallet } from "lucide-react";
 
 import { LoginForm } from "@/components/ops/LoginForm";
-import { ops, puntosFuertesOps } from "@/lib/ops";
 import { company } from "@/lib/site";
+import { diccionario } from "@/lib/i18n";
+import { paraCliente } from "@/lib/i18n/paraCliente";
+import { idiomaActual } from "@/lib/idioma";
+import { SelectorDeIdioma } from "@/components/ops/SelectorDeIdioma";
 
 export const metadata: Metadata = {
-  title: "Entrar",
-  description: `${ops.nombre} — ${ops.lema}.`,
+  title: "Entrar / Log in",
   robots: { index: false, follow: false },
 };
 
@@ -19,7 +21,9 @@ const iconos = {
   cartera: Wallet,
 } as const;
 
-export default function PaginaDeEntrada() {
+export default async function PaginaDeEntrada() {
+  const [t, idioma] = await Promise.all([diccionario(), idiomaActual()]);
+
   return (
     <div className="flex min-h-svh flex-1 bg-sand-50">
       {/* Panel de marca — lo primero que ve cualquiera, así que vende. */}
@@ -51,14 +55,14 @@ export default function PaginaDeEntrada() {
 
           <div className="max-w-sm">
             <p className="text-[11px] font-semibold tracking-[0.18em] text-sprout-400 uppercase">
-              {ops.nombre}
+              {t.login.nombre}
             </p>
             <h2 className="mt-4 text-3xl leading-[1.15] font-bold text-sand-50 xl:text-4xl">
-              {ops.lema}.
+              {t.login.lema}.
             </h2>
 
             <ul className="mt-10 space-y-6">
-              {puntosFuertesOps.map((punto) => {
+              {t.login.puntosFuertes.map((punto) => {
                 const Icono = iconos[punto.icono];
                 return (
                   <li key={punto.titulo} className="flex gap-4">
@@ -81,7 +85,7 @@ export default function PaginaDeEntrada() {
 
           <p className="flex items-center gap-2 text-xs text-sand-50/45">
             <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-            Con licencia y seguro en el estado de Arizona · {company.city}
+            {t.login.licenciaYSeguro(company.city)}
           </p>
         </div>
       </aside>
@@ -101,18 +105,21 @@ export default function PaginaDeEntrada() {
               />
             </Link>
 
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
-              {ops.nombreCorto}
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
+                {t.login.nombreCorto}
+              </p>
+              <SelectorDeIdioma idioma={idioma} />
+            </div>
             <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">
-              Entrar
+              {t.login.entrar}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-forest-950/60">
-              Cuadrillas, cotizaciones y cobranza de {company.name}.
+              {t.login.cuadrillasYCobranza(company.name)}
             </p>
 
             <div className="mt-8">
-              <LoginForm />
+              <LoginForm t={paraCliente(t)} />
             </div>
 
             <Link
@@ -120,7 +127,7 @@ export default function PaginaDeEntrada() {
               className="mt-10 inline-flex items-center gap-1.5 text-xs font-medium text-forest-950/50 transition hover:text-forest-700"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-              Volver a valleyverde.com
+              {t.login.volverAlSitio}
             </Link>
           </div>
         </div>

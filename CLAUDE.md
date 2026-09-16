@@ -34,6 +34,9 @@ El seed crea `ADMINISTRADOR`, `OFICINA` y `TECNICO` (contraseña = usuario) y lo
 de landscaping: Poda de césped, Riego, Poda de arbustos, Limpieza general, Fertilización,
 Control de plagas.
 
+> **Nota:** los 6 servicios del seed fueron eliminados de la BD de producción (Aiven). El
+> catálogo real se gestiona desde `/app/administrador/servicios`.
+
 Otros: `db:generate`, `db:push`, `db:studio`. `postinstall` corre `prisma generate`.
 
 ## Arquitectura
@@ -74,6 +77,10 @@ Dos filtros, y el orden importa:
 
 Nunca confíes en el proxy para autorizar. Es una optimización, no una garantía.
 
+**ADMINISTRADOR tiene acceso total.** `requerirRol(rol)` deja pasar a ADMINISTRADOR por
+cualquier puerta sin redirigirlo — la condición es `usuario.rol !== rol && usuario.rol !== "ADMINISTRADOR"`.
+El panel de ADMINISTRADOR muestra tanto sus secciones propias como las de OFICINA.
+
 ### Convenciones de datos
 
 - **IDs**: UUID en `varchar(191)`, generados en el dominio (`randomUUID()`), no por la base.
@@ -111,17 +118,60 @@ a qué hora".
 | Módulo | Ruta | Estado |
 |--------|------|--------|
 | Login | `/app/login` | ✅ Terminado |
+| Panel ADMINISTRADOR | `/app/administrador` | ✅ Terminado |
 | Panel OFICINA | `/app/oficina` | ✅ Terminado |
+| Panel TECNICO | `/app/tecnico` | ✅ Terminado |
 | **Clientes** | `/app/oficina/clientes` | ✅ Terminado |
 | **Detalle de cliente + ubicaciones** | `/app/oficina/clientes/[clienteId]` | ✅ Terminado |
 | **Nueva ubicación** | `/app/oficina/clientes/[clienteId]/ubicaciones/nueva` | ✅ Terminado |
 | **Asignaciones** | `/app/oficina/asignaciones` | ✅ Terminado |
 | **Nueva asignación** | `/app/oficina/asignaciones/nueva` | ✅ Terminado |
 | **Programar** | `/app/oficina/programar` | ✅ Terminado |
-| Ruta del técnico | `/app/tecnico/ruta` | ⬜ Pendiente |
-| Marcar completado | — | ⬜ Pendiente |
-| Cobranza / finanzas | — | ⬜ Pendiente |
-| Catálogo de servicios (admin) | `/app/administrador/servicios` | ⬜ Pendiente (seed cubre el demo) |
+| **Cobranza** | `/app/oficina/cobranza` | ✅ Terminado |
+| **Catálogo de servicios** | `/app/administrador/servicios` | ✅ Terminado |
+| **Nuevo servicio** | `/app/administrador/servicios/nuevo` | ✅ Terminado |
+| **Ruta del técnico** | `/app/tecnico/ruta` | ✅ Terminado |
+| **Detalle de trabajo + cierre** | `/app/tecnico/ruta/[eventoId]` | ✅ Terminado |
+| **Historial del técnico** | `/app/tecnico/historial` | ✅ Terminado |
+| Usuarios y permisos (admin) | `/app/administrador/usuarios` | ⬜ Pendiente |
+| Reportes (admin) | `/app/administrador/reportes` | ⬜ Pendiente |
+
+## Panel del técnico (app de campo)
+
+Tres pantallas, todas lectura directa Prisma (CQRS-lite) salvo el cierre, que es server action:
+
+- **`/app/tecnico/ruta`** — las paradas de HOY del técnico logueado (`tecnicoId` + `fechaProgramada`
+  entre hoy y mañana, en hora de Phoenix), ordenadas por `hora`. Arriba, un mapa con todos los
+  pines; abajo, la lista numerada con estado pendiente/completado.
+- **`/app/tecnico/ruta/[eventoId]`** — detalle de un trabajo: datos del cliente/ubicación, mapa
+  con el destino y línea desde "Mi ubicación" (geolocalización del navegador), botón "Navegar con
+  Google Maps", y el formulario de cierre (`SubirEvidencia`: hasta 5 fotos + notas).
+- **`/app/tecnico/historial`** — últimos 50 eventos `COMPLETADO` del técnico, con fecha, servicio
+  y notas. **El técnico nunca ve montos/precios en su panel** — ni en el select de Prisma ni en
+  el JSX, en ninguna de las tres pantallas.
+
+El cierre (`completarEvento` en `.../[eventoId]/actions.ts`) valida que el evento sea del técnico
+y esté `PROGRAMADO`, luego pone `COMPLETADO` + `completadoEn`/`completadoPor` + notas. **Las fotos
+de evidencia todavía no se persisten** — el form las acepta pero no hay almacenamiento decidido
+(ver Decisiones abiertas). Falta el modelo `evidencias`.
+
+### Mapas: Leaflet + OpenStreetMap, sin token
+
+Los mapas usan **Leaflet + tiles de OpenStreetMap** — gratis, sin API key. Se probó Mapbox
+primero pero pedía token, así que se descartó. Componentes en `src/components/ops/`:
+
+- `MapaPines.tsx` — mapa con todos los pines (ruta del día).
+- `MapaNavegacion.tsx` — destino + ubicación actual + línea + navegación.
+- `MapaPinesLazy.tsx` / `MapaNavegacionLazy.tsx` — wrappers `"use client"` con `dynamic(..., { ssr:
+  false })`. **Necesarios**: en Next 16 `ssr: false` no se permite dentro de un Server Component,
+  hay que meterlo en un Client Component. Leaflet además rompe en SSR (usa `window`).
+
+**Geocoding sin coordenadas** (`src/lib/geocodificar.ts`): si una ubicación no tiene `latitud`/
+`longitud`, el mapa geocodifica la dirección en el cliente. Dos proveedores libres, sin token, en
+cascada: **Photon** (komoot) primero — bueno buscando por nombre/POI — y **Nominatim** de respaldo.
+No se restringe país (una dirección de México se encuentra igual). Límite conocido: un nombre que
+no está en OpenStreetMap (p. ej. el acrónimo "ISSSSPEA" suelto) no lo resuelve ningún proveedor
+sin token; ahí toca guardar la dirección de calle o las coordenadas a mano.
 
 ## Contextos implementados
 
@@ -204,16 +254,30 @@ Difieren de lo que uno asume por defecto. Lee `node_modules/next/dist/docs/` ant
   `20260915070000_ubicaciones_servicios_asignaciones_eventos` fue marcada como aplicada con
   `prisma migrate resolve --applied` porque las tablas las creó un `db push` previo.
 
+## Migraciones aplicadas
+
+| Migración | Contenido | Nota |
+|-----------|-----------|------|
+| `20260915045343_inicial` | usuarios, roles, sesiones | normal |
+| `20260915053250_clientes` | tabla clientes | normal |
+| `20260915070000_ubicaciones_servicios_asignaciones_eventos` | ubicaciones, servicios, asignaciones, eventos | marcada `--applied`; tablas ya existían por `db push` previo |
+| `20260915080000_eventos_pagado` | `pagado BOOLEAN DEFAULT false`, `pagadoEn DATETIME?`, índice `(estado, pagado)` en eventos | normal |
+
+**Trampa Prisma 7 + Turbopack:** Después de `prisma generate`, el dev server debe
+reiniciarse. Turbopack no invalida el módulo Prisma client en memoria aunque los archivos en
+`src/generated/prisma/` cambien en disco. Síntoma: `PrismaClientValidationError: Invalid
+evento.findMany() invocation` al acceder a campos recién agregados.
+
 ## Decisiones abiertas
 
 - **Dónde se guardan las evidencias fotográficas.** La base es Aiven, pero lo que decide si sirve
-  el disco es dónde corre la app. Sin disco persistente hace falta almacenamiento externo.
+  el disco es dónde corre la app. Sin disco persistente hace falta almacenamiento externo. **Bloquea
+  el cierre completo del técnico**: `SubirEvidencia` ya captura las fotos pero `completarEvento` no
+  las persiste, y falta el modelo `evidencias`.
 - **Multi-empresa.** Aurelio quiere vender esto a otras compañías. Hoy no hay `empresaId` en
   ninguna tabla. Agregarlo ahora son seis columnas y media hora; con datos reales encima es una
   migración fea.
-- **Cuentas por cobrar.** Aurelio mencionó "quién te debe" tres veces. Sale con una columna
-  `pagado` en `eventos`.
 - **Idioma de la app de campo.** Las cuadrillas de landscaping en Phoenix son mayoritariamente
-  hispanohablantes; el dominio ya está en español, pero la interfaz no se ha decidido.
-- **Ruta del técnico.** `/app/tecnico/ruta` — pendiente. Debe mostrar los eventos PROGRAMADOS
-  del día de hoy ordenados por hora, con dirección y enlace a Google Maps.
+  hispanohablantes; el dominio ya está en español. El panel del técnico se construyó en español
+  (de facto la decisión), pero no se ha confirmado si se ofrecerá también en inglés al vender a
+  otras compañías.

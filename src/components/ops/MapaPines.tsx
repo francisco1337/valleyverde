@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-// Fix the default Leaflet icon paths broken by webpack
-const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
-const iconRetinaUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png";
-const shadowUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
+import { geocodificar } from "@/lib/geocodificar";
+
+const NORTE_PHOENIX: [number, number] = [33.65, -112.0];
 
 type Parada = {
   eventoId: string;
@@ -19,50 +17,72 @@ type Parada = {
   longitud: number;
 };
 
+function icono() {
+  return L.icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+  });
+}
+
 export function MapaPines({ paradas }: { paradas: Parada[] }) {
+  const contenedor = useRef<HTMLDivElement>(null);
+  const mapa = useRef<L.Map | null>(null);
+
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
+    if (!contenedor.current || mapa.current) return;
+
+    const m = L.map(contenedor.current, { zoomControl: true }).setView(NORTE_PHOENIX, 11);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(m);
+
+    mapa.current = m;
+
+    async function agregarPines() {
+      const bounds = L.latLngBounds([]);
+      let hayPines = false;
+
+      await Promise.all(
+        paradas.map(async (p) => {
+          let coords: [number, number] | null =
+            p.latitud !== 0 || p.longitud !== 0 ? [p.latitud, p.longitud] : null;
+
+          if (!coords) coords = await geocodificar(p.direccion, NORTE_PHOENIX);
+          if (!coords) return;
+
+          hayPines = true;
+          bounds.extend(coords);
+
+          L.marker(coords, { icon: icono() })
+            .addTo(m)
+            .bindPopup(`<strong>${p.hora} — ${p.cliente}</strong><br/><small>${p.direccion}</small>`);
+        }),
+      );
+
+      if (hayPines) {
+        if (paradas.length === 1) {
+          m.setView(bounds.getCenter(), 14);
+        } else {
+          m.fitBounds(bounds, { padding: [40, 40] });
+        }
+      }
+    }
+
+    agregarPines();
+
+    return () => {
+      m.remove();
+      mapa.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const conCoordenadas = paradas.filter((p) => p.latitud && p.longitud);
-
-  const centro =
-    conCoordenadas.length > 0
-      ? ([
-          conCoordenadas.reduce((s, p) => s + p.latitud, 0) / conCoordenadas.length,
-          conCoordenadas.reduce((s, p) => s + p.longitud, 0) / conCoordenadas.length,
-        ] as [number, number])
-      : ([33.6, -112.0] as [number, number]); // North Phoenix fallback
-
-  if (conCoordenadas.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center bg-sand-100 text-sm text-forest-950/50">
-        Sin coordenadas registradas
-      </div>
-    );
-  }
-
-  return (
-    <MapContainer
-      center={centro}
-      zoom={conCoordenadas.length === 1 ? 14 : 12}
-      style={{ height: "100%", width: "100%" }}
-      scrollWheelZoom={false}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {conCoordenadas.map((p) => (
-        <Marker key={p.eventoId} position={[p.latitud, p.longitud]}>
-          <Popup>
-            <strong className="block">{p.hora} — {p.cliente}</strong>
-            <span className="text-xs">{p.direccion}</span>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
+  return <div ref={contenedor} className="h-full w-full" />;
 }

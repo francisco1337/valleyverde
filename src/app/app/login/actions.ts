@@ -6,6 +6,8 @@ import type { EstadoLogin } from "@/app/app/login/estado";
 import { esErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 import { identidad } from "@/contextos/identidad/infraestructura/dependencias";
 import { rutaDelPanel } from "@/lib/paneles";
+import { diccionario } from "@/lib/i18n";
+import { traducirError } from "@/lib/i18n/traducirError";
 
 /**
  * Adaptador de entrada: el formulario de login.
@@ -28,17 +30,16 @@ export async function iniciarSesion(
 
     destino = rutaDelPanel(usuario.rol);
   } catch (error) {
+    const t = await diccionario();
+
     // Una regla de negocio ya trae un mensaje pensado para leerse.
     if (esErrorDeDominio(error)) {
-      return { error: error.message };
+      return { error: traducirError(error, t) };
     }
 
     // Lo demás es una falla técnica: se registra completa y se cuenta a medias.
     console.error("[login] fallo técnico al iniciar sesión:", error);
-    return {
-      error:
-        "No se pudo conectar con la base de datos. Revisa DATABASE_URL en el archivo .env.",
-    };
+    return { error: t.login.errorConexion };
   }
 
   // Fuera del try: redirect() funciona lanzando una excepción que Next

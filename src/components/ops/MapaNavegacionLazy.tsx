@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
 const MapaNavegacionInner = dynamic(
   () => import("@/components/ops/MapaNavegacion").then((m) => m.MapaNavegacion),
@@ -8,10 +9,11 @@ const MapaNavegacionInner = dynamic(
 );
 
 type Props = {
-  latitud: number;
-  longitud: number;
+  latitud: number | null;
+  longitud: number | null;
   direccion: string;
   cliente: string;
+  t: DiccionarioCliente;
 };
 
 export function MapaNavegacionLazy(props: Props) {

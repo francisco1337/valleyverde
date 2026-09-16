@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { CalendarClock } from "lucide-react";
 
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { paraCliente } from "@/lib/i18n/paraCliente";
+import { idiomaActual } from "@/lib/idioma";
+import { formatearFecha } from "@/lib/i18n/fecha";
 import {
   eventosProgramados,
   asignacionesParaProgramar,
@@ -14,40 +18,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const LABEL_PERIODICIDAD: Record<string, string> = {
-  DIARIO: "Diario",
-  SEMANAL: "Semanal",
-  QUINCENAL: "Quincenal",
-  MENSUAL: "Mensual",
-};
-
-function formatFecha(d: Date) {
-  return d.toLocaleDateString("es-MX", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default async function PaginaProgramar() {
   await requerirRol("OFICINA");
 
-  const [eventosLista, asignacionesLista, tecnicos] = await Promise.all([
+  const [t, idioma, eventosLista, asignacionesLista, tecnicos] = await Promise.all([
+    diccionario(),
+    idiomaActual(),
     eventosProgramados(),
     asignacionesParaProgramar(),
     tecnicosActivos(),
   ]);
 
+  const formatFecha = (d: Date) =>
+    formatearFecha(d, idioma, { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+
   return (
     <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8">
         <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
-          Agenda
+          {t.programar.agenda}
         </p>
-        <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">Programar</h1>
+        <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">{t.programar.programar}</h1>
         <p className="mt-2 text-sm text-forest-950/60">
-          Agenda visitas a partir de las asignaciones activas. Elige técnico, fecha y hora.
+          {t.programar.ayuda}
         </p>
       </header>
 
@@ -55,7 +48,7 @@ export default async function PaginaProgramar() {
         {/* Lista de eventos programados */}
         <section>
           <h2 className="mb-4 text-sm font-semibold text-forest-950">
-            Visitas programadas
+            {t.programar.visitasProgramadas}
             <span className="ml-2 text-forest-950/40">({eventosLista.length})</span>
           </h2>
 
@@ -64,9 +57,9 @@ export default async function PaginaProgramar() {
               <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-forest-50 text-forest-700">
                 <CalendarClock className="h-5 w-5" aria-hidden />
               </span>
-              <p className="mt-4 text-sm font-semibold text-forest-950">Sin visitas programadas</p>
+              <p className="mt-4 text-sm font-semibold text-forest-950">{t.programar.sinVisitasProgramadas}</p>
               <p className="mx-auto mt-1 max-w-sm text-sm text-forest-950/55">
-                Usa el formulario para agendar la primera.
+                {t.programar.usaElFormulario}
               </p>
             </div>
           ) : (
@@ -99,16 +92,17 @@ export default async function PaginaProgramar() {
 
         {/* Formulario de programación */}
         <aside className="lg:sticky lg:top-8">
-          <h2 className="mb-4 text-sm font-semibold text-forest-950">Nueva visita</h2>
+          <h2 className="mb-4 text-sm font-semibold text-forest-950">{t.programar.nuevaVisita}</h2>
 
           {asignacionesLista.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-sand-300 bg-white px-6 py-10 text-center text-sm text-forest-950/55">
-              No hay asignaciones activas. Crea una primero.
+              {t.programar.noHayAsignacionesActivas}
             </div>
           ) : (
             <FormularioProgramar
               asignaciones={asignacionesLista}
               tecnicos={tecnicos}
+              t={paraCliente(t)}
             />
           )}
         </aside>

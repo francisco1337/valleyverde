@@ -4,7 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { SiteShell } from "@/components/site/SiteShell";
-import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { ChatWidget } from "@/components/site/ChatWidget/ChatWidget";
 import { company } from "@/lib/site";
 
 /**
@@ -60,7 +60,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <SiteShell header={<Header />} footer={<Footer />} floating={<WhatsAppButton />}>
+        <SiteShell
+          header={<Header />}
+          footer={<Footer />}
+          chat={<ChatWidget />}
+        >
           {children}
         </SiteShell>
       </body>

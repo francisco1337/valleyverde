@@ -23,6 +23,15 @@ export const company = {
   tagline: "Commercial landscape maintenance across the Valley of the Sun",
 } as const;
 
+/** Copy for the public chat widget (`ChatWidget`). */
+export const chatWidget = {
+  welcome: `Hi! I'm ${company.name}'s virtual assistant. Ask me about our services — for pricing or scheduling, I'll point you to the contact form or WhatsApp.`,
+  placeholder: "Ask about our services…",
+  label: "Chat with us",
+  turnLimitMessage:
+    "We've covered a lot here — for anything more specific, please use the contact form or WhatsApp so a real person can help.",
+} as const;
+
 export const nav = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/#services" },
@@ -564,3 +573,43 @@ export const about = {
     },
   ],
 };
+
+/**
+ * Todo lo público del negocio en un solo bloque de texto, para inyectarlo tal
+ * cual en el system prompt de los dos chats (público e interno) — el corpus
+ * es chico (unas páginas), así que no hace falta RAG/embeddings: cabe
+ * completo en el contexto del modelo.
+ *
+ * No incluye precios (el sitio nunca los publica) ni datos de clientes reales
+ * — esos siguen viviendo solo en las herramientas del asistente interno.
+ */
+export const businessKnowledge = `COMPANY: ${company.name} (legal name: ${company.legalName})
+Tagline: ${company.tagline}
+Based in / serving: ${company.city}
+Phone: ${company.phoneDisplay}
+WhatsApp: ${company.whatsappDisplay}
+Map / directions link: ${company.mapsHref}
+Years in business: ${company.yearsInBusiness}+ (longest-running client relationship: ${company.longestClientYears}+ years)
+No public storefront address is published — the company works on-site across its service area, not from a walk-in office.
+
+SERVICE AREA (communities served): ${communities.join(", ")}
+
+TYPICAL CLIENTS: ${clientTypes.join(", ")}
+
+WHY CLIENTS CHOOSE US:
+${differentiators.map((d) => `- ${d.title}: ${d.body}`).join("\n")}
+
+SERVICES OFFERED:
+${services
+  .map(
+    (s, i) => `${i + 1}. ${s.title} (slug: ${s.slug})
+   ${s.blurb}
+   Highlights: ${s.bullets.join("; ")}
+   FAQ:
+${s.faq.map((f) => `   - Q: ${f.q}\n     A: ${f.a}`).join("\n")}`,
+  )
+  .join("\n\n")}
+
+ABOUT / COMPANY STORY:
+${about.story.join("\n\n")}
+Pull quote: "${about.pullQuote}"`;

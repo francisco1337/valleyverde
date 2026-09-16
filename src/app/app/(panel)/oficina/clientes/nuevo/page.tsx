@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { FormularioDeCliente } from "@/components/ops/FormularioDeCliente";
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { paraCliente } from "@/lib/i18n/paraCliente";
 
 export const metadata: Metadata = {
   title: "Nuevo cliente",
@@ -12,6 +14,7 @@ export const metadata: Metadata = {
 
 export default async function PaginaDeNuevoCliente() {
   await requerirRol("OFICINA");
+  const t = await diccionario();
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-8 sm:py-14">
@@ -20,21 +23,20 @@ export default async function PaginaDeNuevoCliente() {
         className="inline-flex items-center gap-1.5 text-xs font-medium text-forest-950/50 transition hover:text-forest-700"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-        Clientes
+        {t.clientes.clientes}
       </Link>
 
       <header className="mt-5">
         <h1 className="text-3xl font-bold tracking-tight text-forest-950">
-          Nuevo cliente
+          {t.clientes.nuevoCliente}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-forest-950/60">
-          Sólo el nombre es obligatorio. Lo demás se puede completar después —
-          es común dar de alta la empresa antes de saber con quién se va a tratar.
+          {t.clientes.nuevoClienteAyuda}
         </p>
       </header>
 
       <div className="mt-8">
-        <FormularioDeCliente />
+        <FormularioDeCliente t={paraCliente(t)} />
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 
 export class NombreUsuarioInvalido extends ErrorDeDominio {
-  constructor(motivo: string) {
-    super(motivo);
+  constructor(motivo: string, codigo: string) {
+    super(motivo, codigo);
   }
 }
 
@@ -23,12 +23,13 @@ export class NombreUsuario {
     const normalizado = valor.trim().toUpperCase();
 
     if (!normalizado) {
-      throw new NombreUsuarioInvalido("Escribe tu usuario.");
+      throw new NombreUsuarioInvalido("Escribe tu usuario.", "usuario_vacio");
     }
 
     if (normalizado.length > NombreUsuario.LARGO_MAXIMO) {
       throw new NombreUsuarioInvalido(
         `El usuario no puede pasar de ${NombreUsuario.LARGO_MAXIMO} caracteres.`,
+        "usuario_muy_largo",
       );
     }
 

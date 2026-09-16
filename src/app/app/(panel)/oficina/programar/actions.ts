@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { traducirError } from "@/lib/i18n/traducirError";
 import { eventos } from "@/contextos/eventos/infraestructura/dependencias";
 import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
@@ -24,11 +26,12 @@ export async function programarEvento(
   const notas = (datos.get("notas") as string) ?? "";
 
   const valores = { asignacionId, tecnicoId, fechaProgramada, hora, notas };
+  const t = await diccionario();
 
-  if (!asignacionId) return { error: "Elige una asignación.", valores };
-  if (!tecnicoId) return { error: "Elige un técnico.", valores };
-  if (!fechaProgramada) return { error: "Elige la fecha.", valores };
-  if (!hora) return { error: "Indica la hora.", valores };
+  if (!asignacionId) return { error: t.programar.errores.eligeAsignacion, valores };
+  if (!tecnicoId) return { error: t.programar.errores.eligeTecnico, valores };
+  if (!fechaProgramada) return { error: t.programar.errores.eligeFecha, valores };
+  if (!hora) return { error: t.programar.errores.indicaHora, valores };
 
   // Buscar la asignación para copiar servicioId, ubicacionId y precio
   const asignacion = await clientePrisma().asignacion.findUnique({
@@ -36,7 +39,7 @@ export async function programarEvento(
     select: { servicioId: true, ubicacionId: true, precioPorEvento: true },
   });
 
-  if (!asignacion) return { error: "La asignación no existe.", valores };
+  if (!asignacion) return { error: t.programar.errores.asignacionNoExiste, valores };
 
   const fecha = new Date(fechaProgramada);
 
@@ -53,12 +56,12 @@ export async function programarEvento(
     });
   } catch (error) {
     if (error instanceof ErrorDeDominio) {
-      return { error: error.message, valores };
+      return { error: traducirError(error, t), valores };
     }
     // El unique constraint de (asignacionId, fechaProgramada, hora) puede causar Prisma P2002
     const prismaError = error as { code?: string };
     if (prismaError?.code === "P2002") {
-      return { error: "Ya existe un evento programado para esa asignación, fecha y hora.", valores };
+      return { error: t.programar.errores.eventoDuplicado, valores };
     }
     throw error;
   }

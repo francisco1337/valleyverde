@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, MapPin, Wrench } from "lucide-react";
+// MapPin se usa en el encabezado de la dirección
 import type { Metadata } from "next";
 
 import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { paraCliente } from "@/lib/i18n/paraCliente";
 import { SubirEvidencia } from "@/components/ops/SubirEvidencia";
 import { MapaNavegacionLazy } from "@/components/ops/MapaNavegacionLazy";
 
@@ -20,6 +23,8 @@ export default async function PaginaDetalleEvento({
 }) {
   const { eventoId } = await params;
   const usuario = await requerirRol("TECNICO");
+  const t = await diccionario();
+  const tCliente = paraCliente(t);
 
   const evento = await clientePrisma().evento.findUnique({
     where: { id: eventoId },
@@ -27,7 +32,6 @@ export default async function PaginaDetalleEvento({
       id: true,
       hora: true,
       estado: true,
-      precio: true,
       notas: true,
       tecnicoId: true,
       servicio: { select: { nombre: true } },
@@ -46,9 +50,6 @@ export default async function PaginaDetalleEvento({
 
   if (!evento || evento.tecnicoId !== usuario.id) notFound();
 
-  const tieneCoordenadas =
-    evento.ubicacion.latitud !== null && evento.ubicacion.longitud !== null;
-
   const yaCompletado = evento.estado === "COMPLETADO";
 
   return (
@@ -58,7 +59,7 @@ export default async function PaginaDetalleEvento({
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-forest-950/55 transition hover:text-forest-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        Mi ruta de hoy
+        {t.tecnico.detalle.miRutaDeHoy}
       </Link>
 
       {/* Encabezado del trabajo */}
@@ -79,7 +80,7 @@ export default async function PaginaDetalleEvento({
                 : "bg-sand-100 text-forest-950/55"
             }`}
           >
-            {evento.estado === "PROGRAMADO" ? "Pendiente" : "Completado"}
+            {evento.estado === "PROGRAMADO" ? t.comun.pendienteBadge : t.comun.completadoBadge}
           </span>
         </div>
 
@@ -100,7 +101,7 @@ export default async function PaginaDetalleEvento({
 
         {evento.ubicacion.notasDeAcceso && (
           <div className="mt-4 rounded-lg bg-sand-50 px-3.5 py-3 text-sm text-forest-950/70">
-            <span className="font-semibold">Acceso: </span>
+            <span className="font-semibold">{t.tecnico.detalle.acceso}</span>
             {evento.ubicacion.notasDeAcceso}
           </div>
         )}
@@ -110,7 +111,7 @@ export default async function PaginaDetalleEvento({
             href={`tel:${evento.ubicacion.cliente.telefono}`}
             className="mt-4 block rounded-xl border border-sand-200 px-4 py-2.5 text-center text-sm font-medium text-forest-700 transition hover:bg-sand-50"
           >
-            Llamar a {evento.ubicacion.cliente.nombre}
+            {t.tecnico.detalle.llamarA(evento.ubicacion.cliente.nombre)}
           </a>
         )}
       </div>
@@ -118,42 +119,27 @@ export default async function PaginaDetalleEvento({
       {/* Mapa */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-sand-200 bg-white shadow-sm">
         <div className="h-64 sm:h-80">
-          {tieneCoordenadas ? (
-            <MapaNavegacionLazy
-
-              latitud={Number(evento.ubicacion.latitud)}
-              longitud={Number(evento.ubicacion.longitud)}
-              direccion={evento.ubicacion.direccion}
-              cliente={evento.ubicacion.cliente.nombre}
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-forest-950/45">
-              <MapPin className="h-6 w-6" />
-              <span>Sin coordenadas — abre Maps con la dirección</span>
-              <a
-                href={`https://maps.google.com/maps?q=${encodeURIComponent(evento.ubicacion.direccion)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 rounded-lg bg-forest-700 px-4 py-2 text-xs font-semibold text-white transition hover:bg-forest-800"
-              >
-                Abrir en Google Maps
-              </a>
-            </div>
-          )}
+          <MapaNavegacionLazy
+            latitud={evento.ubicacion.latitud ? Number(evento.ubicacion.latitud) : null}
+            longitud={evento.ubicacion.longitud ? Number(evento.ubicacion.longitud) : null}
+            direccion={evento.ubicacion.direccion}
+            cliente={evento.ubicacion.cliente.nombre}
+            t={tCliente}
+          />
         </div>
       </div>
 
       {/* Cierre del trabajo */}
       {!yaCompletado && (
         <div className="mt-4 rounded-2xl border border-sand-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-sm font-bold text-forest-950">Cerrar trabajo</h2>
-          <SubirEvidencia eventoId={evento.id} />
+          <h2 className="mb-4 text-sm font-bold text-forest-950">{t.tecnico.detalle.cerrarTrabajo}</h2>
+          <SubirEvidencia eventoId={evento.id} t={tCliente} />
         </div>
       )}
 
       {yaCompletado && evento.notas && (
         <div className="mt-4 rounded-2xl border border-sprout-300 bg-sprout-50 p-5">
-          <p className="text-sm font-semibold text-forest-800">Notas del cierre</p>
+          <p className="text-sm font-semibold text-forest-800">{t.tecnico.detalle.notasDelCierre}</p>
           <p className="mt-1 text-sm text-forest-950/70">{evento.notas}</p>
         </div>
       )}

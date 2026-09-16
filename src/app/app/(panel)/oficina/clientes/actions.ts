@@ -7,6 +7,8 @@ import type { EstadoDeAltaDeCliente } from "@/app/app/(panel)/oficina/clientes/e
 import { esErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 import { clientes } from "@/contextos/clientes/infraestructura/dependencias";
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { traducirError } from "@/lib/i18n/traducirError";
 
 /**
  * Adaptador de entrada: el formulario de alta de cliente.
@@ -32,19 +34,18 @@ export async function registrarCliente(
     notas: texto("notas"),
   };
 
+  const t = await diccionario();
+
   try {
     await clientes.registrarCliente().ejecutar(valores);
   } catch (error) {
     // Una regla de negocio ya trae un mensaje pensado para leerse.
     if (esErrorDeDominio(error)) {
-      return { error: error.message, valores };
+      return { error: traducirError(error, t), valores };
     }
 
     console.error("[clientes] fallo técnico al registrar:", error);
-    return {
-      error: "No se pudo guardar el cliente. Revisa la conexión con la base de datos.",
-      valores,
-    };
+    return { error: t.clientes.errorGuardarCliente, valores };
   }
 
   revalidatePath("/app/oficina/clientes");

@@ -4,7 +4,14 @@
  * muestra a la persona, un fallo de red no.
  */
 export abstract class ErrorDeDominio extends Error {
-  constructor(mensaje: string) {
+  /**
+   * Identificador estable e independiente del idioma — el mensaje en `.message`
+   * siempre es español (lo que ve un log), pero la capa de UI traduce por este
+   * código, no por el texto. Por default es el nombre de la clase; las clases
+   * con más de un mensaje posible (p.ej. "vacío" vs "muy largo") lo pasan
+   * explícito en cada sitio donde se lanzan.
+   */
+  constructor(mensaje: string, readonly codigo: string = new.target.name) {
     super(mensaje);
     this.name = new.target.name;
   }

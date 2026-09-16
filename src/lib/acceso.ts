@@ -30,11 +30,13 @@ export async function requerirSesion(): Promise<UsuarioAutenticado> {
 /**
  * Exige un rol concreto.
  *
- * Si entró con otro rol se le manda a su propio panel en vez de enseñarle un
- * error: no se equivocó de sistema, se equivocó de puerta.
+ * ADMINISTRADOR tiene acceso total: pasa por cualquier puerta.
+ * Los demás roles sólo entran a su propia sección; si se equivocan de puerta
+ * se les manda a su panel en vez de mostrarles un error.
  */
 export async function requerirRol(rol: Rol): Promise<UsuarioAutenticado> {
   const usuario = await requerirSesion();
-  if (usuario.rol !== rol) redirect(rutaDelPanel(usuario.rol));
+  if (usuario.rol !== rol && usuario.rol !== "ADMINISTRADOR")
+    redirect(rutaDelPanel(usuario.rol));
   return usuario;
 }

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { requerirRol } from "@/lib/acceso";
+import { diccionario } from "@/lib/i18n";
+import { traducirError } from "@/lib/i18n/traducirError";
 import { asignaciones } from "@/contextos/asignaciones/infraestructura/dependencias";
 import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
 import type { Periodicidad } from "@/contextos/asignaciones/dominio/Asignacion";
@@ -26,20 +28,21 @@ export async function crearAsignacion(
   const fechaFin = (datos.get("fechaFin") as string) ?? "";
 
   const valores = { ubicacionId, servicioId, periodicidad, precioPorEvento, fechaInicio, fechaFin };
+  const t = await diccionario();
 
-  if (!ubicacionId) return { error: "Elige una ubicación.", valores };
-  if (!servicioId) return { error: "Elige un servicio.", valores };
+  if (!ubicacionId) return { error: t.asignaciones.errores.eligeUbicacion, valores };
+  if (!servicioId) return { error: t.asignaciones.errores.eligeServicio, valores };
   if (!["DIARIO", "SEMANAL", "QUINCENAL", "MENSUAL"].includes(periodicidad)) {
-    return { error: "Periodicidad inválida.", valores };
+    return { error: t.asignaciones.errores.periodicidadInvalida, valores };
   }
 
   const precio = parseFloat(precioPorEvento);
-  if (isNaN(precio)) return { error: "El precio no es un número válido.", valores };
+  if (isNaN(precio)) return { error: t.asignaciones.errores.precioInvalido, valores };
 
   const inicio = new Date(fechaInicio);
   const fin = new Date(fechaFin);
-  if (isNaN(inicio.getTime())) return { error: "Fecha de inicio inválida.", valores };
-  if (isNaN(fin.getTime())) return { error: "Fecha de fin inválida.", valores };
+  if (isNaN(inicio.getTime())) return { error: t.asignaciones.errores.fechaInicioInvalida, valores };
+  if (isNaN(fin.getTime())) return { error: t.asignaciones.errores.fechaFinInvalida, valores };
 
   try {
     await asignaciones.crearAsignacion().ejecutar({
@@ -52,7 +55,7 @@ export async function crearAsignacion(
     });
   } catch (error) {
     if (error instanceof ErrorDeDominio) {
-      return { error: error.message, valores };
+      return { error: traducirError(error, t), valores };
     }
     throw error;
   }

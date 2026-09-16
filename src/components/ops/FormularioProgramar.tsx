@@ -13,19 +13,13 @@ import type {
   AsignacionParaProgramar,
   TecnicoOpcion,
 } from "@/contextos/eventos/infraestructura/consultas/EventosProgramados";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
 const CLASES_CAMPO =
   "w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-forest-950 outline-none transition placeholder:text-forest-950/35 focus:border-forest-400 focus:ring-4 focus:ring-forest-500/10 disabled:opacity-60";
 
 const CLASES_SELECT =
   "w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-forest-950 outline-none transition focus:border-forest-400 focus:ring-4 focus:ring-forest-500/10 disabled:opacity-60";
-
-const LABEL_PERIODICIDAD: Record<string, string> = {
-  DIARIO: "Diario",
-  SEMANAL: "Semanal",
-  QUINCENAL: "Quincenal",
-  MENSUAL: "Mensual",
-};
 
 function Etiqueta({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
   return (
@@ -38,7 +32,7 @@ function Etiqueta({ htmlFor, children }: { htmlFor: string; children: React.Reac
   );
 }
 
-function BotonProgramar() {
+function BotonProgramar({ t }: { t: DiccionarioCliente }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -49,12 +43,12 @@ function BotonProgramar() {
       {pending ? (
         <>
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-          Programando…
+          {t.programar.form.programando}
         </>
       ) : (
         <>
           <CalendarPlus className="h-4 w-4" aria-hidden />
-          Programar visita
+          {t.programar.form.programarVisita}
         </>
       )}
     </button>
@@ -64,9 +58,11 @@ function BotonProgramar() {
 export function FormularioProgramar({
   asignaciones,
   tecnicos,
+  t,
 }: {
   asignaciones: AsignacionParaProgramar[];
   tecnicos: TecnicoOpcion[];
+  t: DiccionarioCliente;
 }) {
   const [estado, accion] = useActionState(programarEvento, ESTADO_PROGRAMACION_INICIAL);
   const v: ValoresDeEvento = estado.valores;
@@ -83,13 +79,13 @@ export function FormularioProgramar({
       {fueExitoso && (
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-sprout-300 bg-sprout-50 px-3.5 py-3 text-sm text-sprout-700">
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
-          Visita programada correctamente.
+          {t.programar.form.visitaProgramadaOk}
         </div>
       )}
 
       <form action={accion} className="space-y-4" noValidate>
         <div className="space-y-1.5">
-          <Etiqueta htmlFor="asignacionId">Asignación</Etiqueta>
+          <Etiqueta htmlFor="asignacionId">{t.programar.form.asignacion}</Etiqueta>
           <select
             id="asignacionId"
             name="asignacionId"
@@ -97,17 +93,18 @@ export function FormularioProgramar({
             defaultValue={v.asignacionId}
             className={CLASES_SELECT}
           >
-            <option value="">— Elige una asignación —</option>
+            <option value="">{t.programar.form.elegirAsignacion}</option>
             {asignaciones.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.ubicacion.cliente.nombre} / {a.ubicacion.nombre} · {a.servicio.nombre} ({LABEL_PERIODICIDAD[a.periodicidad]})
+                {a.ubicacion.cliente.nombre} / {a.ubicacion.nombre} · {a.servicio.nombre} (
+                {t.programar.periodicidad[a.periodicidad as keyof typeof t.programar.periodicidad]})
               </option>
             ))}
           </select>
         </div>
 
         <div className="space-y-1.5">
-          <Etiqueta htmlFor="tecnicoId">Técnico</Etiqueta>
+          <Etiqueta htmlFor="tecnicoId">{t.programar.form.tecnico}</Etiqueta>
           <select
             id="tecnicoId"
             name="tecnicoId"
@@ -115,10 +112,10 @@ export function FormularioProgramar({
             defaultValue={v.tecnicoId}
             className={CLASES_SELECT}
           >
-            <option value="">— Elige un técnico —</option>
-            {tecnicos.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.nombre}
+            <option value="">{t.programar.form.elegirTecnico}</option>
+            {tecnicos.map((tecnico) => (
+              <option key={tecnico.id} value={tecnico.id}>
+                {tecnico.nombre}
               </option>
             ))}
           </select>
@@ -126,7 +123,7 @@ export function FormularioProgramar({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Etiqueta htmlFor="fechaProgramada">Fecha</Etiqueta>
+            <Etiqueta htmlFor="fechaProgramada">{t.programar.form.fecha}</Etiqueta>
             <input
               id="fechaProgramada"
               name="fechaProgramada"
@@ -138,7 +135,7 @@ export function FormularioProgramar({
           </div>
 
           <div className="space-y-1.5">
-            <Etiqueta htmlFor="hora">Hora</Etiqueta>
+            <Etiqueta htmlFor="hora">{t.programar.form.hora}</Etiqueta>
             <input
               id="hora"
               name="hora"
@@ -151,14 +148,14 @@ export function FormularioProgramar({
         </div>
 
         <div className="space-y-1.5">
-          <Etiqueta htmlFor="notas">Notas</Etiqueta>
+          <Etiqueta htmlFor="notas">{t.programar.form.notas}</Etiqueta>
           <textarea
             id="notas"
             name="notas"
             rows={2}
             maxLength={500}
             defaultValue={v.notas}
-            placeholder="Instrucciones especiales para esta visita…"
+            placeholder={t.programar.form.notasPlaceholder}
             className={`${CLASES_CAMPO} resize-none`}
           />
         </div>
@@ -172,7 +169,7 @@ export function FormularioProgramar({
           ) : null}
         </div>
 
-        <BotonProgramar />
+        <BotonProgramar t={t} />
       </form>
     </div>
   );

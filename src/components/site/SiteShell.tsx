@@ -17,13 +17,13 @@ import { ScrollTriggerRefresh } from "@/components/site/ScrollTriggerRefresh";
 export function SiteShell({
   header,
   footer,
-  floating,
+  chat,
   children,
 }: {
   header: ReactNode;
   footer: ReactNode;
-  /** Anything that floats over the marketing site — the WhatsApp button today. */
-  floating?: ReactNode;
+  /** The public chat widget — floats over the marketing site. */
+  chat?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -39,7 +39,7 @@ export function SiteShell({
       {header}
       <main className="flex-1">{children}</main>
       {footer}
-      {floating}
+      {chat}
     </>
   );
 }

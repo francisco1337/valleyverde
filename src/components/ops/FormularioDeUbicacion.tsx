@@ -10,6 +10,7 @@ import {
   ESTADO_ALTA_INICIAL,
   type ValoresDeUbicacion,
 } from "@/app/app/(panel)/oficina/clientes/[clienteId]/ubicaciones/nueva/estado";
+import type { DiccionarioCliente } from "@/lib/i18n/paraCliente";
 
 const CLASES_CAMPO =
   "w-full rounded-xl border border-sand-300 bg-white px-4 py-3 text-sm text-forest-950 outline-none transition placeholder:text-forest-950/35 focus:border-forest-400 focus:ring-4 focus:ring-forest-500/10 disabled:opacity-60";
@@ -18,10 +19,12 @@ function Etiqueta({
   htmlFor,
   children,
   opcional,
+  t,
 }: {
   htmlFor: string;
   children: React.ReactNode;
   opcional?: boolean;
+  t: DiccionarioCliente;
 }) {
   return (
     <label
@@ -31,14 +34,14 @@ function Etiqueta({
       {children}
       {opcional ? (
         <span className="text-[10px] font-medium tracking-normal text-forest-950/35 normal-case">
-          opcional
+          {t.comun.opcional}
         </span>
       ) : null}
     </label>
   );
 }
 
-function BotonGuardar() {
+function BotonGuardar({ t }: { t: DiccionarioCliente }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -49,19 +52,19 @@ function BotonGuardar() {
       {pending ? (
         <>
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-          Guardando…
+          {t.comun.guardando}
         </>
       ) : (
         <>
           <Save className="h-4 w-4" aria-hidden />
-          Guardar ubicación
+          {t.clientes.formUbicacion.guardarUbicacion}
         </>
       )}
     </button>
   );
 }
 
-export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
+export function FormularioDeUbicacion({ clienteId, t }: { clienteId: string; t: DiccionarioCliente }) {
   const [estado, accion] = useActionState(registrarUbicacion, ESTADO_ALTA_INICIAL);
   const v: ValoresDeUbicacion = estado.valores;
 
@@ -70,7 +73,7 @@ export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
       <input type="hidden" name="clienteId" value={clienteId} />
 
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="nombre">Nombre de la ubicación</Etiqueta>
+        <Etiqueta htmlFor="nombre" t={t}>{t.clientes.formUbicacion.nombreDeLaUbicacion}</Etiqueta>
         <input
           id="nombre"
           name="nombre"
@@ -79,13 +82,13 @@ export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
           autoFocus
           maxLength={191}
           defaultValue={v.nombre}
-          placeholder="Plaza Norte — estacionamiento"
+          placeholder={t.clientes.formUbicacion.nombrePlaceholder}
           className={CLASES_CAMPO}
         />
       </div>
 
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="direccion">Dirección</Etiqueta>
+        <Etiqueta htmlFor="direccion" t={t}>{t.clientes.formUbicacion.direccion}</Etiqueta>
         <input
           id="direccion"
           name="direccion"
@@ -99,8 +102,8 @@ export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
       </div>
 
       <div className="space-y-1.5">
-        <Etiqueta htmlFor="notasDeAcceso" opcional>
-          Notas de acceso
+        <Etiqueta htmlFor="notasDeAcceso" opcional t={t}>
+          {t.clientes.formUbicacion.notasDeAcceso}
         </Etiqueta>
         <textarea
           id="notasDeAcceso"
@@ -108,7 +111,7 @@ export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
           rows={3}
           maxLength={2000}
           defaultValue={v.notasDeAcceso}
-          placeholder="Código del portón, horario permitido, a quién buscar…"
+          placeholder={t.clientes.formUbicacion.notasDeAccesoPlaceholder}
           className={`${CLASES_CAMPO} resize-y`}
         />
       </div>
@@ -123,12 +126,12 @@ export function FormularioDeUbicacion({ clienteId }: { clienteId: string }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <BotonGuardar />
+        <BotonGuardar t={t} />
         <Link
           href={`/app/oficina/clientes/${clienteId}`}
           className="rounded-xl px-4 py-3 text-sm font-medium text-forest-950/55 transition hover:bg-sand-100 hover:text-forest-800"
         >
-          Cancelar
+          {t.comun.cancelar}
         </Link>
       </div>
     </form>

@@ -6,7 +6,7 @@ import { ErrorDeDominio } from "@/contextos/compartido/dominio/ErrorDeDominio";
  * el alta en vez de dejar una lista con dos renglones idénticos.
  */
 export class NombreDeClienteRepetido extends ErrorDeDominio {
-  constructor(nombre: string) {
+  constructor(readonly nombre: string) {
     super(`Ya existe un cliente llamado "${nombre}".`);
   }
 }

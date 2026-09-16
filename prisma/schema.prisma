@@ -140,6 +140,9 @@ model Evento {
   estado          EstadoEvento @default(PROGRAMADO)
   completadoEn    DateTime?
   completadoPor   String?
+  /// true cuando el cliente ya pagó esta visita
+  pagado          Boolean      @default(false)
+  pagadoEn        DateTime?
   notas           String?      @db.Text
   creadoEn      DateTime @default(now())
   actualizadoEn DateTime @updatedAt
@@ -149,6 +152,7 @@ model Evento {
   ubicacion     Ubicacion  @relation(fields: [ubicacionId], references: [id])
   tecnico       Usuario?   @relation("Tecnico", fields: [tecnicoId], references: [id], onDelete: Restrict)
   cierreUsuario Usuario?   @relation("CompletadoPor", fields: [completadoPor], references: [id], onDelete: Restrict)
+  evidencias    Evidencia[]
 
   @@unique([asignacionId, fechaProgramada, hora])
   @@index([tecnicoId, fechaProgramada])
@@ -156,4 +160,18 @@ model Evento {
   @@index([servicioId, estado])
   @@index([ubicacionId, fechaProgramada])
   @@map("eventos")
+}
+
+/// Foto de evidencia de un evento cerrado. Se guarda como data URL en la propia
+/// base (sin servicio externo) — ver "Decisiones abiertas" en CLAUDE.md.
+model Evidencia {
+  id       String   @id
+  eventoId String
+  imagen   String   @db.LongText
+  creadoEn DateTime @default(now())
+
+  evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  @@index([eventoId])
+  @@map("evidencias")
 }

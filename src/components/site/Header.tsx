@@ -290,6 +290,16 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
+
+            <Link
+              href={portal.href}
+              data-nav-item
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-3 text-sm font-semibold text-white/55 transition hover:bg-white/10 hover:text-white"
+            >
+              <Lock className="size-3.5" aria-hidden="true" />
+              {portal.label}
+            </Link>
           </nav>
 
           <div data-nav-item className="mt-7">
@@ -310,20 +320,10 @@ export function Header() {
             target="_blank"
             rel="noopener noreferrer"
             data-nav-item
-            className="mt-3 inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-bold text-white"
+            className="mt-3 mb-2 inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-bold text-white"
           >
             WhatsApp
           </a>
-
-          <Link
-            href={portal.href}
-            data-nav-item
-            onClick={() => setOpen(false)}
-            className="mt-6 mb-2 inline-flex items-center justify-center gap-2 border-t border-white/10 pt-6 text-sm font-semibold text-white/55 transition hover:text-white"
-          >
-            <Lock className="size-3.5" aria-hidden="true" />
-            {portal.label}
-          </Link>
         </div>
       </div>
     </>
