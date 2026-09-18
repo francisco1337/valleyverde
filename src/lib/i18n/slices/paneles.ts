@@ -10,7 +10,6 @@ const es = {
       programar: { titulo: "Programar", resumen: "Agenda visitas asignando técnico, fecha y hora." },
       cobranza: { titulo: "Cobranza", resumen: "Quién pagó y quién debe." },
       trabajos: { titulo: "Catálogo de trabajos", resumen: "Trabajos completados, con fotos de evidencia." },
-      visitas: { titulo: "Visitas", resumen: "Registro de páginas visitadas, sitio público y panel interno." },
     },
   },
   OFICINA: {
@@ -48,7 +47,6 @@ const en: SliceDePaneles = {
       programar: { titulo: "Schedule", resumen: "Book visits by assigning a technician, date and time." },
       cobranza: { titulo: "Billing", resumen: "Who paid and who owes." },
       trabajos: { titulo: "Job catalog", resumen: "Completed jobs, with evidence photos." },
-      visitas: { titulo: "Visits", resumen: "Page visit log, public site and internal panel." },
     },
   },
   OFICINA: {
