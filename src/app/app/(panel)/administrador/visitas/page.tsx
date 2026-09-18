@@ -4,10 +4,12 @@ import type { Metadata } from "next";
 
 import { requerirRol } from "@/lib/acceso";
 import { diccionario } from "@/lib/i18n";
+import { paraCliente } from "@/lib/i18n/paraCliente";
 import { idiomaActual } from "@/lib/idioma";
 import { formatearFecha } from "@/lib/i18n/fecha";
 import { ROLES } from "@/contextos/identidad/dominio/Rol";
 import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
+import { BotonVaciarVisitas } from "@/components/ops/BotonVaciarVisitas";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const metadata: Metadata = {
@@ -182,12 +184,16 @@ export default async function PaginaDeVisitas({ searchParams }: Props) {
         {t.comun.panel}
       </Link>
 
-      <header className="mb-8">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
-          {t.visitas.operacion}
-        </p>
-        <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">{t.visitas.visitas}</h1>
-        <p className="mt-2 text-sm text-forest-950/60">{t.visitas.ayuda}</p>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-forest-600 uppercase">
+            {t.visitas.operacion}
+          </p>
+          <h1 className="mt-2.5 text-3xl font-bold tracking-tight text-forest-950">{t.visitas.visitas}</h1>
+          <p className="mt-2 text-sm text-forest-950/60">{t.visitas.ayuda}</p>
+        </div>
+
+        <BotonVaciarVisitas t={paraCliente(t)} />
       </header>
 
       <form className="mb-8 flex flex-wrap items-end gap-4 rounded-2xl border border-sand-200 bg-white px-5 py-4">

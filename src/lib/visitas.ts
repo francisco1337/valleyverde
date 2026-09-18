@@ -2,9 +2,10 @@
 
 import { randomUUID } from "crypto";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 import { clientePrisma } from "@/contextos/compartido/infraestructura/persistencia/ClientePrisma";
-import { usuarioActual } from "@/lib/acceso";
+import { requerirRol, usuarioActual } from "@/lib/acceso";
 import { hoyEnPhoenix } from "@/lib/tiempo";
 
 /** El primer salto de x-forwarded-for (o x-real-ip) — no verificado contra un proxy de confianza. */
@@ -43,4 +44,11 @@ export async function registrarVisita(ruta: string): Promise<void> {
       ip,
     },
   });
+}
+
+/** Borra toda la bitácora de visitas — irreversible, por eso vive detrás de ADMINISTRADOR. */
+export async function vaciarVisitas(): Promise<void> {
+  await requerirRol("ADMINISTRADOR");
+  await clientePrisma().visita.deleteMany({});
+  revalidatePath("/app/administrador/visitas");
 }

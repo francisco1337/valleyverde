@@ -13,6 +13,8 @@ const es = {
   sinVisitas: "Todavía no hay visitas registradas.",
   sinResultados: "Ningún registro coincide con estos filtros.",
   mostrandoUltimas: (n: number) => `Mostrando las últimas ${n}.`,
+  vaciarHistorial: "Vaciar historial",
+  confirmarVaciar: "¿Seguro que quieres borrar TODAS las visitas registradas? Esta acción no se puede deshacer.",
   filtros: {
     ruta: "Ruta contiene",
     rutaPlaceholder: "/app/oficina/...",
@@ -44,6 +46,8 @@ const en: SliceDeVisitas = {
   sinVisitas: "No visits recorded yet.",
   sinResultados: "No records match these filters.",
   mostrandoUltimas: (n) => `Showing the last ${n}.`,
+  vaciarHistorial: "Clear history",
+  confirmarVaciar: "Are you sure you want to delete ALL recorded visits? This action cannot be undone.",
   filtros: {
     ruta: "Path contains",
     rutaPlaceholder: "/app/oficina/...",
