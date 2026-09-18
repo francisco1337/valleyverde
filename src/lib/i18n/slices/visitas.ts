@@ -1,0 +1,61 @@
+const es = {
+  metaTitulo: "Visitas",
+  operacion: "Operación",
+  visitas: "Visitas",
+  ayuda: "Registro de páginas visitadas — sitio público y panel interno.",
+  columnaRuta: "Ruta",
+  columnaFecha: "Fecha",
+  columnaHora: "Hora",
+  columnaRol: "Rol",
+  columnaUsuario: "Usuario",
+  columnaIp: "IP",
+  anonimo: "Anónimo",
+  sinVisitas: "Todavía no hay visitas registradas.",
+  sinResultados: "Ningún registro coincide con estos filtros.",
+  mostrandoUltimas: (n: number) => `Mostrando las últimas ${n}.`,
+  filtros: {
+    ruta: "Ruta contiene",
+    rutaPlaceholder: "/app/oficina/...",
+    ip: "IP contiene",
+    ipPlaceholder: "192.168...",
+    rol: "Rol",
+    todos: "Todos",
+    desde: "Desde",
+    hasta: "Hasta",
+    filtrar: "Filtrar",
+    limpiar: "Limpiar filtros",
+  },
+};
+
+type SliceDeVisitas = typeof es;
+
+const en: SliceDeVisitas = {
+  metaTitulo: "Visits",
+  operacion: "Operations",
+  visitas: "Visits",
+  ayuda: "Page visit log — public site and internal panel.",
+  columnaRuta: "Path",
+  columnaFecha: "Date",
+  columnaHora: "Time",
+  columnaRol: "Role",
+  columnaUsuario: "User",
+  columnaIp: "IP",
+  anonimo: "Anonymous",
+  sinVisitas: "No visits recorded yet.",
+  sinResultados: "No records match these filters.",
+  mostrandoUltimas: (n) => `Showing the last ${n}.`,
+  filtros: {
+    ruta: "Path contains",
+    rutaPlaceholder: "/app/oficina/...",
+    ip: "IP contains",
+    ipPlaceholder: "192.168...",
+    rol: "Role",
+    todos: "All",
+    desde: "From",
+    hasta: "To",
+    filtrar: "Filter",
+    limpiar: "Clear filters",
+  },
+};
+
+export const visitas = { es, en };

@@ -175,3 +175,22 @@ model Evidencia {
   @@index([eventoId])
   @@map("evidencias")
 }
+
+/// Un registro de vista de página, sitio público o panel interno. Es una
+/// bitácora, no un agregado de dominio — sin invariantes que proteger, por
+/// eso `usuarioId` no lleva llave foránea (ver CQRS-lite en CLAUDE.md).
+model Visita {
+  id        String   @id
+  ruta      String   @db.VarChar(255)
+  fecha     DateTime @db.Date
+  hora      String   @db.VarChar(5)
+  rol       Rol?
+  usuarioId String?
+  /// IPv4 o IPv6 — de x-forwarded-for/x-real-ip, sin verificar contra un proxy de confianza.
+  ip        String?  @db.VarChar(45)
+  creadoEn  DateTime @default(now())
+
+  @@index([ruta])
+  @@index([fecha])
+  @@map("visitas")
+}

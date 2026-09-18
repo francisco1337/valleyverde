@@ -13,6 +13,7 @@ export type ClaveDeSeccion =
   | "programar"
   | "cobranza"
   | "trabajos"
+  | "visitas"
   | "ruta"
   | "historial";
 
@@ -31,6 +32,7 @@ export const paneles: Record<Rol, PanelRutas> = {
       { clave: "programar", ruta: "/app/oficina/programar" },
       { clave: "cobranza", ruta: "/app/oficina/cobranza" },
       { clave: "trabajos", ruta: "/app/oficina/trabajos" },
+      { clave: "visitas", ruta: "/app/administrador/visitas" },
     ],
   },
   OFICINA: {

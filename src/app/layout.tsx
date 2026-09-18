@@ -5,6 +5,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { SiteShell } from "@/components/site/SiteShell";
 import { ChatWidget } from "@/components/site/ChatWidget/ChatWidget";
+import { RegistradorDeVisitas } from "@/components/ui/RegistradorDeVisitas";
 import { company } from "@/lib/site";
 
 /**
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${montserrat.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <RegistradorDeVisitas />
         <SiteShell
           header={<Header />}
           footer={<Footer />}

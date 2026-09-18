@@ -14,6 +14,7 @@ import { trabajos } from "./slices/trabajos";
 import { tecnico } from "./slices/tecnico";
 import { asistente } from "./slices/asistente";
 import { errores } from "./slices/errores";
+import { visitas } from "./slices/visitas";
 
 const diccionarios = {
   es: {
@@ -30,6 +31,7 @@ const diccionarios = {
     tecnico: tecnico.es,
     asistente: asistente.es,
     errores: errores.es,
+    visitas: visitas.es,
   },
   en: {
     comun: comun.en,
@@ -45,6 +47,7 @@ const diccionarios = {
     tecnico: tecnico.en,
     asistente: asistente.en,
     errores: errores.en,
+    visitas: visitas.en,
   },
 } as const satisfies Record<Idioma, unknown>;
 

